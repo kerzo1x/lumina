@@ -12,17 +12,16 @@ VulkanMod собственный лёгкий шейдерный конвейе�
 
 | Шейдеры выключены | Шейдеры включены |
 | --- | --- |
-| ![](docs/screenshots/16_shaders_off.jpg) | ![](docs/screenshots/16_shaders_on.jpg) |
+| ![](docs/screenshots/13_shaders_off.jpg) | ![](docs/screenshots/13_shaders_on.jpg) |
 
 | | |
 | --- | --- |
-| ![Дуэль в незерите на рассвете](docs/screenshots/02_ice_duel_sunrise.jpg)<br>Дуэль в незерите на рассвете | ![Зачарованный незерит вблизи](docs/screenshots/03_netherite_closeup.jpg)<br>Зачарованный незерит вблизи |
-| ![Вишнёвая роща](docs/screenshots/04_cherry_grove_duel.jpg)<br>Вишнёвая роща | ![Рассвет над озером](docs/screenshots/05_lake_sunrise.jpg)<br>Рассвет над озером |
-| ![Рассвет на реке](docs/screenshots/06_river_sunrise.jpg)<br>Рассвет на реке | ![Прозрачная вода](docs/screenshots/07_water.jpg)<br>Прозрачная вода |
-| ![Цветочный лес](docs/screenshots/08_flower_forest.jpg)<br>Цветочный лес | ![Тайга](docs/screenshots/09_taiga.jpg)<br>Тайга |
-| ![Рассвет с горных пиков](docs/screenshots/10_peaks_sunrise.jpg)<br>Рассвет с горных пиков | ![Лунная ночь](docs/screenshots/11_night.jpg)<br>Лунная ночь |
-| ![Дождь](docs/screenshots/12_rain.jpg)<br>Дождь | ![Незер](docs/screenshots/13_nether.jpg)<br>Незер |
-| ![Незер, у лавы](docs/screenshots/14_nether_duel.jpg)<br>Незер, у лавы | ![Энд](docs/screenshots/15_end_duel.jpg)<br>Энд |
+| ![Дуэль в незерите на рассвете](docs/screenshots/02_ice_duel_sunrise.jpg)<br>Дуэль в незерите на рассвете | ![Вишнёвая роща](docs/screenshots/03_cherry_grove_duel.jpg)<br>Вишнёвая роща |
+| ![Рассвет над озером](docs/screenshots/04_lake_sunrise.jpg)<br>Рассвет над озером | ![Рассвет на реке](docs/screenshots/05_river_sunrise.jpg)<br>Рассвет на реке |
+| ![Прозрачная вода](docs/screenshots/06_water.jpg)<br>Прозрачная вода | ![Цветочный лес](docs/screenshots/07_flower_forest.jpg)<br>Цветочный лес |
+| ![Тайга](docs/screenshots/08_taiga.jpg)<br>Тайга | ![Лунная ночь](docs/screenshots/09_night.jpg)<br>Лунная ночь |
+| ![Незер](docs/screenshots/10_nether.jpg)<br>Незер | ![Энд](docs/screenshots/11_end_duel.jpg)<br>Энд |
+| ![Острова Энда под туманностью](docs/screenshots/12_end_islands.jpg)<br>Острова Энда под туманностью |  |
 
 Все скриншоты сняты в 2560×1440 со стандартным видом мода.
 

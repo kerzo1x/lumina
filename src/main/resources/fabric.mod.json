@@ -6,6 +6,11 @@
   "description": "Lightweight shader pipeline for VulkanMod: stable sun shadows, warm lighting, bloom and colour grading.",
   "authors": ["kerzo1x"],
   "license": "MIT",
+  "icon": "assets/lumina/icon.png",
+  "contact": {
+    "sources": "https://github.com/kerzo1x/vulkan-shaders",
+    "issues": "https://github.com/kerzo1x/vulkan-shaders/issues"
+  },
   "environment": "client",
   "entrypoints": {
     "client": ["dev.lumina.Lumina"],

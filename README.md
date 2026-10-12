@@ -12,17 +12,16 @@ No shader packs are needed: everything is on out of the box and tuned from one s
 
 | Shaders off | Shaders on |
 | --- | --- |
-| ![](docs/screenshots/16_shaders_off.jpg) | ![](docs/screenshots/16_shaders_on.jpg) |
+| ![](docs/screenshots/13_shaders_off.jpg) | ![](docs/screenshots/13_shaders_on.jpg) |
 
 | | |
 | --- | --- |
-| ![Netherite duel at sunrise](docs/screenshots/02_ice_duel_sunrise.jpg)<br>Netherite duel at sunrise | ![Enchanted netherite up close](docs/screenshots/03_netherite_closeup.jpg)<br>Enchanted netherite up close |
-| ![Cherry grove](docs/screenshots/04_cherry_grove_duel.jpg)<br>Cherry grove | ![Sunrise over the lake](docs/screenshots/05_lake_sunrise.jpg)<br>Sunrise over the lake |
-| ![Sunrise on the river](docs/screenshots/06_river_sunrise.jpg)<br>Sunrise on the river | ![Clear water](docs/screenshots/07_water.jpg)<br>Clear water |
-| ![Flower forest](docs/screenshots/08_flower_forest.jpg)<br>Flower forest | ![Taiga](docs/screenshots/09_taiga.jpg)<br>Taiga |
-| ![Sunrise from the peaks](docs/screenshots/10_peaks_sunrise.jpg)<br>Sunrise from the peaks | ![Moonlit night](docs/screenshots/11_night.jpg)<br>Moonlit night |
-| ![Rain](docs/screenshots/12_rain.jpg)<br>Rain | ![Nether](docs/screenshots/13_nether.jpg)<br>Nether |
-| ![Nether, by the lava](docs/screenshots/14_nether_duel.jpg)<br>Nether, by the lava | ![The End](docs/screenshots/15_end_duel.jpg)<br>The End |
+| ![Netherite duel at sunrise](docs/screenshots/02_ice_duel_sunrise.jpg)<br>Netherite duel at sunrise | ![Cherry grove](docs/screenshots/03_cherry_grove_duel.jpg)<br>Cherry grove |
+| ![Sunrise over the lake](docs/screenshots/04_lake_sunrise.jpg)<br>Sunrise over the lake | ![Sunrise on the river](docs/screenshots/05_river_sunrise.jpg)<br>Sunrise on the river |
+| ![Clear water](docs/screenshots/06_water.jpg)<br>Clear water | ![Flower forest](docs/screenshots/07_flower_forest.jpg)<br>Flower forest |
+| ![Taiga](docs/screenshots/08_taiga.jpg)<br>Taiga | ![Moonlit night](docs/screenshots/09_night.jpg)<br>Moonlit night |
+| ![Nether](docs/screenshots/10_nether.jpg)<br>Nether | ![The End](docs/screenshots/11_end_duel.jpg)<br>The End |
+| ![End islands under the nebula](docs/screenshots/12_end_islands.jpg)<br>End islands under the nebula |  |
 
 All screenshots are taken at 2560×1440 with the default look of the mod.
 
