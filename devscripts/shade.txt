@@ -1,0 +1,22 @@
+wait 240
+cmd weather clear
+cmd gamemode creative @p
+cmd time set 8500
+cmd execute as @p at @s run fill ~-9 ~30 ~-9 ~9 ~30 ~9 smooth_stone
+cmd execute as @p at @s run fill ~-2 ~31 ~2 ~6 ~36 ~2 smooth_stone
+cmd execute as @p at @s run tp @s ~ ~31 ~-6 0 12
+wait 20
+cmd execute as @p at @s run summon villager ~-4 ~ ~5 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~3 ~ ~5 {NoAI:1b}
+cmd execute as @p at @s run summon husk ~6.5 ~ ~5 {NoAI:1b}
+cmd execute as @p at @s run summon cow ~1 ~ ~5 {NoAI:1b}
+cmd execute as @p at @s run setblock ~-2 ~ ~4 chest
+wait 80
+shotui s1_entities_shaded
+cmd execute as @p at @s run tp @s ~4 ~ ~8 180 10
+wait 40
+shotui s2_hand_in_shadow
+set entityShading false
+wait 20
+shotui s3_shading_off
+quit

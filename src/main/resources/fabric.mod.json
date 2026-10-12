@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "lumina",
+  "version": "${version}",
+  "name": "Lumina",
+  "description": "Lightweight shader pipeline for VulkanMod: stable sun shadows, warm lighting, bloom and colour grading.",
+  "authors": ["kerzo1x"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.lumina.Lumina"],
+    "modmenu": ["dev.lumina.gui.ModMenuIntegration"]
+  },
+  "mixins": ["lumina.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.17.0",
+    "minecraft": "1.21.11",
+    "vulkanmod": ">=0.6.8",
+    "fabric-api": "*"
+  },
+  "breaks": {
+    "beryl": "*"
+  }
+}

@@ -1,0 +1,27 @@
+wait 240
+cmd weather clear
+cmd gamemode creative @p
+cmd time set 8500
+cmd execute as @p at @s run tp @s ~ ~ ~ 0 15
+wait 100
+fps on
+shot k1_ground
+cmd execute as @p at @s run tp @s ~ ~ ~ 180 35
+wait 40
+shot k2_ground_down
+cmd gamemode spectator @p
+cmd execute as @p at @s run tp @s ~ ~14 ~ -90 30
+wait 60
+shot k3_overview
+cmd execute as @p at @s run tp @s ~ ~ ~ 0 30
+wait 40
+shot k4_overview_south
+fps on_high
+set shadows false
+wait 80
+fps no_shadows
+set shadows true
+set enabled false
+wait 120
+fps off
+quit

@@ -1,0 +1,24 @@
+wait 240
+cmd weather clear
+cmd gamemode spectator @p
+cmd time set 8500
+cmd execute as @p at @s run tp @s ~ ~10 ~ 90 15
+wait 100
+shot w1_water_west
+cmd execute as @p at @s run tp @s ~-40 ~-6 ~ 120 20
+wait 80
+shot w2_water_close
+cmd time set 12000
+wait 60
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 8
+wait 40
+shot w3_water_sunset
+cmd time set 8500
+cmd execute as @p at @s run tp @s ~40 ~-40 ~ 0 0
+wait 100
+fps underground
+cmd execute as @p at @s run tp @s ~ ~46 ~ -90 30
+wait 60
+shot w4_land
+fps land
+quit

@@ -1,0 +1,32 @@
+# Gradle / Loom
+.gradle/
+build/
+out/
+bin/
+*.log
+
+# Game directories of the dev and production runs
+run/
+run-prod/
+
+# Third-party jars: see libs/README.md
+libs/*.jar
+prodmods/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local tooling
+.claude/

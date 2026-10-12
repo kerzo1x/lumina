@@ -1,0 +1,40 @@
+wait 200
+cmd weather clear
+cmd gamemode creative @p
+cmd time set 8500
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 -20
+wait 40
+fps open_on
+cmd execute as @p at @s run fill ~-4 ~-1 ~-4 ~4 ~5 ~4 obsidian hollow
+cmd execute as @p at @s run setblock ~3 ~ ~3 torch
+wait 60
+shot r1_sealed_towards_sun
+cmd execute as @p at @s run tp @s ~ ~ ~ -90 10
+wait 30
+shot r2_sealed_torch
+cmd execute as @p at @s run fill ~-4 ~2 ~-1 ~-4 ~3 ~1 air
+cmd execute as @p at @s run fill ~-1 ~5 ~-1 ~1 ~5 ~1 air
+wait 40
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 -10
+wait 30
+shot r3_window_towards_sun
+cmd execute as @p at @s run tp @s ~ ~ ~ -90 35
+wait 30
+shot r4_window_floor
+cmd time set 18000
+wait 60
+shot r5_night_room
+cmd execute as @p at @s run tp @s ~ ~8 ~ 0 20
+wait 40
+shot n1_night_on
+set enabled false
+wait 100
+shot n2_night_off
+cmd time set 8500
+wait 100
+fps open_off
+shot n3_day_off
+set enabled true
+wait 200
+fps open_on2
+quit

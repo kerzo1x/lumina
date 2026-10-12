@@ -1,0 +1,9 @@
+wait 200
+cmd gamemode spectator @p
+cmd execute in minecraft:the_end run tp @p 1200 90 0 0 -25
+wait 260
+shot z1_end_on
+set endSky false
+wait 20
+shot z2_end_vanilla
+quit

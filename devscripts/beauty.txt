@@ -1,0 +1,33 @@
+wait 200
+cmd weather clear
+cmd gamemode creative @p
+cmd time set 23300
+cmd execute as @p at @s run tp @s ~ ~ ~ -80 -8
+wait 100
+shot g1_sunrise
+cmd time set 500
+wait 40
+shot g2_morning_low
+cmd time set 1500
+cmd execute as @p at @s run tp @s ~ ~ ~ -60 -25
+wait 40
+shot g3_rays_through_trees
+cmd execute as @p at @s run tp @s ~ ~ ~ 120 10
+wait 40
+shot g4_morning_west
+set shadowResolution 4096
+wait 60
+shot g5_res4096
+set shadowResolution 1024
+wait 60
+shot g6_res1024
+set shadowResolution 2048
+cmd weather rain
+wait 200
+shot g7_rain
+cmd weather clear
+cmd execute in minecraft:the_nether run tp @p 0 80 0
+wait 200
+shot h1_nether
+wait 700
+quit

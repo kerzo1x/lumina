@@ -1,0 +1,121 @@
+plugins {
+	id 'fabric-loom' version '1.14-SNAPSHOT'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+project.ext.lwjglVersion = "3.3.3"
+
+// Scripted in-game checks, see src/dev. Never packaged into the mod jar.
+sourceSets {
+	dev {
+		compileClasspath += main.compileClasspath
+		runtimeClasspath += main.runtimeClasspath
+	}
+}
+
+loom {
+	mods {
+		lumina {
+			sourceSet sourceSets.main
+		}
+		"lumina-dev" {
+			sourceSet sourceSets.dev
+		}
+	}
+
+	runs {
+		devClient {
+			client()
+			name = "Dev Script Client"
+			source sourceSets.dev
+			programArgs "--width", project.findProperty("luminaWidth") ?: "1280", "--height", project.findProperty("luminaHeight") ?: "720"
+
+			// -PluminaNewWorld=<name> generates a fresh world instead of opening the copied test world
+			if (project.hasProperty("luminaNewWorld")) {
+				vmArg "-Dlumina.dev.newWorld=${project.property('luminaNewWorld')}"
+
+				if (project.hasProperty("luminaSeed")) {
+					vmArg "-Dlumina.dev.seed=${project.property('luminaSeed')}"
+				}
+			} else {
+				programArgs "--quickPlaySingleplayer", "New World"
+			}
+
+			if (project.hasProperty("luminaScript")) {
+				vmArg "-Dlumina.dev.script=${project.property('luminaScript')}"
+			}
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	// VulkanMod is taken from the exact jar the game runs with, the dev branch has diverged from the release
+	modImplementation files("libs/VulkanMod-0.6.8+1.21.11.jar")
+	modCompileOnly files("libs/modmenu-17.0.0.jar")
+
+	// Nested in the VulkanMod jar, loom does not expose them from a file dependency
+	implementation "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
+	implementation "org.lwjgl:lwjgl-vma:$lwjglVersion"
+	implementation "org.lwjgl:lwjgl-shaderc:$lwjglVersion"
+	runtimeOnly "org.lwjgl:lwjgl-vma:$lwjglVersion:natives-windows"
+	runtimeOnly "org.lwjgl:lwjgl-shaderc:$lwjglVersion:natives-windows"
+
+	devImplementation sourceSets.main.output
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+	it.options.encoding = "UTF-8"
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+// Runs the remapped release jar the way a launcher does, together with the mods from prodmods/ and the dev script.
+tasks.register("devJar", Jar) {
+	from sourceSets.dev.output
+	archiveClassifier = "devscript-named"
+	destinationDirectory = layout.buildDirectory.dir("devlibs")
+}
+
+tasks.register("remapDevJar", net.fabricmc.loom.task.RemapJarTask) {
+	inputFile = tasks.devJar.archiveFile
+	archiveClassifier = "devscript"
+	destinationDirectory = layout.buildDirectory.dir("devlibs")
+	classpath.from(sourceSets.dev.compileClasspath)
+	addNestedDependencies = false
+}
+
+tasks.register("prodClient", net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+	mods.from(fileTree("prodmods") { include "*.jar" })
+	mods.from(tasks.remapDevJar.archiveFile)
+	runDir = file("run-prod")
+	programArgs.addAll("--quickPlaySingleplayer", "New World",
+			"--width", project.findProperty("luminaWidth") ?: "1280",
+			"--height", project.findProperty("luminaHeight") ?: "720")
+
+	if (project.hasProperty("luminaScript")) {
+		jvmArgs.add("-Dlumina.dev.script=${project.property('luminaScript')}")
+	}
+}

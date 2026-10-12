@@ -1,0 +1,21 @@
+wait 240
+cmd weather clear
+cmd gamemode spectator @p
+cmd time set 9000
+cmd execute as @p at @s run tp @s ~ ~14 ~ -90 30
+wait 120
+shot f1_user_config
+set contactShadows false
+set ambientOcclusion false
+wait 20
+shot f3_no_contact_no_ao
+set contactShadows true
+set ambientOcclusion true
+cmd execute in minecraft:the_end run tp @p 1200 90 0 0 -25
+wait 260
+shot z1_end
+cmd execute as @p at @s run tp @s ~ ~ ~ 140 -50
+wait 40
+shot z2_end_other
+fps end
+quit

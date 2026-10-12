@@ -1,0 +1,37 @@
+wait 200
+cmd weather clear
+cmd gamemode creative @p
+cmd time set 8500
+cmd execute as @p at @s run tp @s ~ ~ ~ 0 15
+wait 100
+fps open_on
+set enabled false
+wait 160
+fps open_off
+set enabled true
+wait 160
+fps open_on_again
+set shadows false
+wait 100
+fps on_no_shadows
+set shadows true
+set bloom false
+set godrays 0
+wait 100
+fps on_no_bloom_rays
+set bloom true
+set godrays 0.3
+cmd execute as @p at @s run fill ~-4 ~-1 ~-4 ~4 ~5 ~4 smooth_stone hollow
+cmd execute as @p at @s run fill ~-4 ~1 ~-1 ~-4 ~3 ~1 air
+cmd execute as @p at @s run fill ~-1 ~5 ~-1 ~1 ~5 ~1 air
+wait 80
+cmd execute as @p at @s run tp @s ~ ~ ~ -90 30
+wait 30
+shot s1_room_floor_east
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 -5
+wait 30
+shot s2_room_window_west
+cmd execute as @p at @s run tp @s ~ ~ ~ 60 -50
+wait 30
+shot s3_room_roof_sun
+quit

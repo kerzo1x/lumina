@@ -1,0 +1,16 @@
+wait 300
+cmd weather clear
+cmd gamemode creative @p
+cmd time set 8500
+cmd execute as @p at @s run tp @s ~ ~ ~ 0 15
+wait 200
+fps on
+shot p1_on
+set enabled false
+wait 200
+fps off
+shot p2_off
+set enabled true
+wait 200
+fps on_again
+quit

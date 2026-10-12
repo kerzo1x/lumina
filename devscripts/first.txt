@@ -1,0 +1,9 @@
+wait 240
+cmd weather clear
+cmd time set 9000
+wait 80
+shot a_on
+set enabled false
+wait 120
+shot a_off
+quit

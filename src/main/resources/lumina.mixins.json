@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.lumina.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "BlockRendererMixin",
+    "EntityMixin",
+    "FluidRendererMixin",
+    "GameRendererMixin",
+    "GraphicsPipelineMixin",
+    "LevelRendererMixin",
+    "OptionsMixin",
+    "RenderRegionMixin",
+    "SkyRendererMixin",
+    "WorldRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

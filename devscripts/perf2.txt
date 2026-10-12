@@ -1,0 +1,63 @@
+wait 240
+cmd weather clear
+cmd gamemode spectator @p
+cmd time set 6000
+cmd execute as @p at @s run tp @s ~ ~12 ~ 90 -20
+wait 120
+fps A_all_on
+set customSky false
+wait 45
+fps off_customSky
+set customSky true
+wait 5
+set clouds false
+wait 45
+fps off_clouds
+set clouds true
+wait 5
+set ambientOcclusion false
+wait 45
+fps off_ambientOcclusion
+set ambientOcclusion true
+wait 5
+set contactShadows false
+wait 45
+fps off_contactShadows
+set contactShadows true
+wait 5
+set water false
+wait 45
+fps off_water
+set water true
+wait 5
+set reflections false
+wait 45
+fps off_reflections
+set reflections true
+wait 5
+set bloom false
+wait 45
+fps off_bloom
+set bloom true
+wait 5
+set godrays 0
+wait 45
+fps off_godrays
+set godrays 0.3
+wait 5
+set shadows false
+wait 45
+fps off_shadows
+set shadows true
+wait 5
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 30
+wait 45
+fps B_look_down_water
+set water false
+wait 45
+fps B_water_off
+set water true
+set enabled false
+wait 120
+fps Z_disabled
+quit

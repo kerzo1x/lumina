@@ -1,0 +1,34 @@
+wait 240
+cmd weather clear
+cmd gamemode spectator @p
+cmd time set 6000
+cmd execute as @p at @s run tp @s ~ ~12 ~ 90 -20
+wait 100
+shot y1_day_sky
+set cloudCoverage 0.85
+wait 20
+shot y1b_cloudy
+set cloudCoverage 0.5
+cmd time set 18000
+cmd execute as @p at @s run tp @s ~ ~ ~ 0 -50
+wait 80
+shot y5_night_moon
+cmd time set 15000
+cmd execute as @p at @s run tp @s ~ ~ ~ 180 -30
+wait 60
+shot y5b_night_north
+cmd time set 8500
+cmd weather rain
+cmd gamemode creative @p
+cmd execute as @p at @s run tp @s ~ ~-11.5 ~ 60 25
+wait 260
+shot y6_rain_puddles
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 -15
+wait 40
+shot y6b_rain_sky
+cmd weather clear
+cmd execute in minecraft:the_end run tp @p 0 90 0 0 -30
+wait 240
+shot y8_end
+fps end
+quit

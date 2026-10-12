@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "lumina-dev",
+  "version": "1.0.0",
+  "name": "Lumina Dev Script",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.lumina.dev.DevScript"]
+  },
+  "mixins": ["lumina-dev.mixins.json"],
+  "depends": {
+    "lumina": "*"
+  }
+}

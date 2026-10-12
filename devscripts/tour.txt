@@ -1,0 +1,35 @@
+wait 200
+cmd weather clear
+cmd gamemode spectator @p
+cmd time set 8500
+cmd execute as @p at @s run tp @s ~ ~14 ~ 0 30
+wait 100
+shot b1_south
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 30
+wait 30
+shot b2_west
+cmd execute as @p at @s run tp @s ~ ~ ~ 180 30
+wait 30
+shot b3_north
+cmd execute as @p at @s run tp @s ~ ~ ~ -90 30
+wait 30
+shot b4_east
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 -35
+wait 30
+shot b5_sun
+cmd time set 12300
+wait 60
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 0
+wait 30
+shot c1_sunset_west
+cmd execute as @p at @s run tp @s ~ ~ ~ -90 25
+wait 30
+shot c2_sunset_east
+cmd time set 18000
+wait 60
+shot d1_night
+cmd time set 6000
+cmd execute as @p at @s run tp @s ~ ~-13 ~ 0 10
+wait 60
+shot e1_noon_ground
+quit

@@ -1,0 +1,98 @@
+wait 240
+cmd weather clear
+cmd gamemode creative @p
+cmd time set 8500
+cmd execute as @p at @s run tp @s ~ ~ ~ 60 20
+wait 100
+shot v1_a
+wait 12
+shot v1_b
+fps waving
+cmd gamemode spectator @p
+cmd execute as @p at @s run tp @s ~-65 ~1.5 ~ -90 4
+wait 80
+shot v2_water
+cmd execute as @p at @s run summon villager ~10 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~12 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~14 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~16 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~18 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~20 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~22 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~24 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~26 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~28 ~ ~-8 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~10 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~12 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~14 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~16 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~18 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~20 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~22 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~24 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~26 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~28 ~ ~-6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~10 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~12 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~14 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~16 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~18 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~20 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~22 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~24 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~26 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~28 ~ ~-4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~10 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~12 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~14 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~16 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~18 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~20 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~22 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~24 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~26 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~28 ~ ~-2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~10 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~12 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~14 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~16 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~18 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~20 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~22 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~24 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~26 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~28 ~ ~0 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~10 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~12 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~14 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~16 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~18 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~20 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~22 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~24 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~26 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~28 ~ ~2 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~10 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~12 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~14 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~16 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~18 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~20 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~22 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~24 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~26 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~28 ~ ~4 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~10 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~12 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~14 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~16 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~18 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~20 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~22 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~24 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~26 ~ ~6 {NoAI:1b}
+cmd execute as @p at @s run summon villager ~28 ~ ~6 {NoAI:1b}
+wait 100
+fps crowd
+shot v3_crowd
+quit
