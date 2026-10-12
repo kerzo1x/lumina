@@ -13,6 +13,9 @@ run-prod/
 libs/*.jar
 prodmods/
 
+# Full-size PNG originals of the screenshots, the JPEG copies next to them are tracked
+docs/screenshots/png/
+
 # IDE
 .idea/
 *.iml
