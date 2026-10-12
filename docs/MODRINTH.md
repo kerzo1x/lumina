@@ -7,12 +7,12 @@ Everything to paste into the Modrinth project form.
 | Name | Lumina |
 | Summary | Shaders for VulkanMod: sun shadows, warm light, water, a new sky and bloom. No shader packs, light enough for PvP. |
 | Project type | Mod |
-| Categories | Decoration (primary), Utility, Optimization |
+| Categories | Decoration (primary), Utility |
 | Environment | Client-side only (client: required, server: unsupported) |
 | Loader / game version | Fabric, 1.21.11 |
 | License | MIT (`MIT License`) |
-| Source code | https://github.com/kerzo1x/vulkan-shaders |
-| Issue tracker | https://github.com/kerzo1x/vulkan-shaders/issues |
+| Source code | https://github.com/kerzo1x/lumina |
+| Issue tracker | https://github.com/kerzo1x/lumina/issues |
 | Icon | `docs/icon.png` (512×512) |
 | Gallery | PNG originals in `docs/screenshots/png/`, or the JPEG copies in `docs/screenshots/` |
 | Dependencies | VulkanMod: required, Fabric API: required, Mod Menu: optional |
@@ -23,13 +23,13 @@ Copy everything below this line into the description field.
 
 ---
 
-![Lumina](https://raw.githubusercontent.com/kerzo1x/vulkan-shaders/main/docs/screenshots/01_ice_duel.jpg)
+![Lumina](https://raw.githubusercontent.com/kerzo1x/lumina/main/docs/screenshots/06_water.jpg)
 
 **Lumina** is a shader mod for [VulkanMod](https://modrinth.com/mod/vulkanmod). It adds its own lightweight shader pipeline on top of VulkanMod's renderer: sun shadows, warm lighting, water, a new sky, bloom and colour grading. No shader packs are needed. Everything is on out of the box and tuned from one settings screen, and it is light enough to keep on in PvP.
 
 | Shaders off | Shaders on |
 | --- | --- |
-| ![](https://raw.githubusercontent.com/kerzo1x/vulkan-shaders/main/docs/screenshots/13_shaders_off.jpg) | ![](https://raw.githubusercontent.com/kerzo1x/vulkan-shaders/main/docs/screenshots/13_shaders_on.jpg) |
+| ![](https://raw.githubusercontent.com/kerzo1x/lumina/main/docs/screenshots/13_shaders_off.jpg) | ![](https://raw.githubusercontent.com/kerzo1x/lumina/main/docs/screenshots/13_shaders_on.jpg) |
 
 ## Features
 
@@ -80,7 +80,7 @@ Both keys can be rebound. Settings are stored in `config/lumina.json`. The mod i
 
 ## Something went wrong?
 
-If rendering fails, Lumina switches itself off instead of crashing the game and writes the reason to `logs/lumina.log`. Press `F10` to try again, and attach that file to your [issue](https://github.com/kerzo1x/vulkan-shaders/issues).
+If rendering fails, Lumina switches itself off instead of crashing the game and writes the reason to `logs/lumina.log`. Press `F10` to try again, and attach that file to your [issue](https://github.com/kerzo1x/lumina/issues).
 
 ## License
 

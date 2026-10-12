@@ -8,8 +8,8 @@
   "license": "MIT",
   "icon": "assets/lumina/icon.png",
   "contact": {
-    "sources": "https://github.com/kerzo1x/vulkan-shaders",
-    "issues": "https://github.com/kerzo1x/vulkan-shaders/issues"
+    "sources": "https://github.com/kerzo1x/lumina",
+    "issues": "https://github.com/kerzo1x/lumina/issues"
   },
   "environment": "client",
   "entrypoints": {
