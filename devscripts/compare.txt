@@ -1,0 +1,41 @@
+# Screenshots for comparing two builds: the new effects are switched off first (on an older build those lines
+# only log an error), so the pictures show the same features. Then the new effects one at a time.
+wait 200
+cmd gamemode spectator @p
+cmd execute in minecraft:overworld run tp @p 0 120 0
+wait 100
+cmd execute in minecraft:overworld run spreadplayers 0 0 0 1 false @p
+cmd weather clear
+cmd time set 3000
+set atmosphericHaze false
+set cloudShadows false
+set autoExposure false
+set adaptiveQuality false
+wait 500
+cmd execute as @p at @s run tp @s ~ ~10 ~ 0 15
+wait 200
+shot cmp_A_horizon
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 40
+wait 60
+shot cmp_B_down
+cmd execute as @p at @s run tp @s ~ ~ ~ -95 -15
+wait 60
+shot cmp_C_sun
+cmd execute as @p at @s run tp @s ~ ~ ~ 0 15
+cmd time set 14500
+wait 100
+shot cmp_D_night
+cmd time set 3000
+wait 60
+set atmosphericHaze true
+wait 20
+shot new_haze
+set atmosphericHaze false
+set cloudShadows true
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 40
+wait 20
+shot new_cloudshadows_down
+set cloudShadows false
+wait 20
+shot new_cloudshadows_off_down
+quit
