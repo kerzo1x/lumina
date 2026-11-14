@@ -49,12 +49,26 @@ All screenshots are taken at 2560×1440 with the default look of the mod.
 - Soft clouds with adjustable cover
 - A separate sky for the End
 
+**Atmosphere** (new in 0.2)
+- Atmospheric haze that thickens with distance, gathers in valleys and glows towards the sun
+- Cloud shadows: the clouds of the Lumina sky shade the ground they drift over
+- Eye adaptation: the picture brightens slowly in the dark and darkens quickly in glaring light
+
 **World**
 - Waving grass, plants and leaves
 
 **Performance**
+- Adaptive quality: while frames take longer than the target frame rate (170 by default), the most expensive parts
+  of the effects are lowered step by step, and brought back once there is time to spare
+- Shadow maps are not redrawn every frame: the near one at 90 updates a second or when the light or camera moves,
+  the far one only when the light turns, the camera has moved or every 1.5 seconds
+- Sky and clouds at half resolution (sun, moon and stars stay sharp), sun rays at a quarter, ambient occlusion at
+  half with a depth-aware upscale
 - Crowd optimisation: when a lot of creatures are around, only the nearest ones are drawn (the limit is adjustable)
 - Every effect can be switched off separately
+
+In 0.2 the same scenes render in a quarter to a third less time than in 0.1 at 2560x1440 on an Intel Arc A750,
+with the three new effects on, and Lumina takes about 80 MB less video memory.
 
 ## Requirements
 
@@ -81,7 +95,9 @@ Client-side only. Not compatible with Beryl.
 | `F9` | Open the shader settings |
 
 Both keys can be rebound in the game's key bind settings, under *Lumina Shaders*. The settings screen is also available
-through Mod Menu and has six tabs: General, Shadows, Light & colour, Water, Sky and Performance.
+through Mod Menu and has seven tabs: General, Shadows, Light & colour, Atmosphere, Water, Sky and Performance.
+
+Settings files from 0.1 keep working: options added later start at their defaults.
 
 Settings are stored in `config/lumina.json`. The mod is translated into English and Russian.
 
@@ -89,6 +105,9 @@ Settings are stored in `config/lumina.json`. The mod is translated into English 
 
 If something goes wrong while rendering, Lumina switches itself off instead of crashing the game and writes the reason
 to `logs/lumina.log`. Press `F10` to try again. Please attach that file when you report a problem.
+
+Lumina also guards against a VulkanMod crash (`Framebuffer.getDepthAttachment() is null`) that could happen when the
+window was minimised or switched to and from fullscreen while the swap chain was being rebuilt.
 
 ## Building from source
 
@@ -115,7 +134,11 @@ keyboard. Example scripts are in [devscripts/](devscripts); the script commands 
 ```
 
 `-PluminaNewWorld` generates a fresh world with that name, or opens it if it already exists; without it the client
-opens the save called `New World`. `-PluminaWidth` and `-PluminaHeight` set the window size. The `prodClient` task runs
+opens the save called `New World`. `-PluminaWidth` and `-PluminaHeight` set the window size.
+
+Measuring: `bench <label> <seconds>` in a script logs the average frame time, the frame rate and the slowest 1 % of
+frames. [bench.txt](devscripts/bench.txt) measures a few fixed views, [profile.txt](devscripts/profile.txt) the cost
+of each effect, and [compare.txt](devscripts/compare.txt) takes the same screenshots on two builds to compare them. The `prodClient` task runs
 the remapped release jar together with the mods from `prodmods/`, the way a launcher would.
 
 ## License

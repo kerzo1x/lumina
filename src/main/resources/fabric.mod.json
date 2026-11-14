@@ -3,7 +3,7 @@
   "id": "lumina",
   "version": "${version}",
   "name": "Lumina",
-  "description": "Lightweight shader pipeline for VulkanMod: stable sun shadows, warm lighting, bloom and colour grading.",
+  "description": "Lightweight shader pipeline for VulkanMod: stable sun shadows, warm lighting, water, a new sky with cloud shadows, atmospheric haze, bloom and colour grading.",
   "authors": ["kerzo1x"],
   "license": "MIT",
   "icon": "assets/lumina/icon.png",
