@@ -30,7 +30,8 @@ import java.util.Deque;
  * singleplayer world so rendering changes can be checked from screenshots without touching the keyboard.
  *
  * Script lines: {@code cmd <server command>}, {@code wait <ticks>}, {@code shot <name>} (world only), {@code shotui <name>} (with HUD), {@code hitboxes},
- * {@code set <config field> <value>}, {@code fps <label>}, {@code quit}.
+ * {@code set <config field> <value>}, {@code fps <label>}, {@code bench <label> <seconds>}, {@code minimize}, {@code restore},
+ * {@code resize <width> <height>}, {@code quit}.
  *
  * With -Dlumina.dev.newWorld=&lt;name&gt; the world is not expected to exist: it is generated from the title screen
  * (creative, peaceful, seed from -Dlumina.dev.seed or random) and opened again on later runs.
@@ -137,6 +138,12 @@ public class DevScript implements ClientModInitializer {
                         benchEndNanos = System.nanoTime() + (long) (seconds * 1.0e9);
                         benchFrames = new long[Math.max(1024, (int) (seconds * 2000))];
                         this.waitTicks = (int) Math.ceil(seconds * 20.0f) + 2;
+                    }
+                    case "minimize" -> org.lwjgl.glfw.GLFW.glfwIconifyWindow(minecraft.getWindow().handle());
+                    case "restore" -> org.lwjgl.glfw.GLFW.glfwRestoreWindow(minecraft.getWindow().handle());
+                    case "resize" -> {
+                        String[] size = arg.split(" ");
+                        org.lwjgl.glfw.GLFW.glfwSetWindowSize(minecraft.getWindow().handle(), Integer.parseInt(size[0]), Integer.parseInt(size[1]));
                     }
                     case "quit" -> minecraft.stop();
                     default -> LuminaLog.warn("[dev] unknown script line: %s", line);

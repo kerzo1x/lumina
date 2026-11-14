@@ -1,0 +1,31 @@
+# Swap chain rebuilds: minimise and restore, resize, with the shaders running. Watch lumina.log for errors.
+wait 200
+cmd gamemode spectator @p
+cmd execute in minecraft:overworld run tp @p 0 120 0
+wait 100
+cmd execute in minecraft:overworld run spreadplayers 0 0 0 1 false @p
+cmd time set 3000
+wait 300
+minimize
+wait 60
+restore
+wait 60
+minimize
+wait 5
+restore
+wait 2
+minimize
+wait 2
+restore
+wait 60
+resize 1280 720
+wait 40
+resize 1920 1080
+wait 20
+resize 800 600
+wait 3
+resize 2000 1200
+wait 60
+shot after_resizes
+bench after_resizes 5
+quit
