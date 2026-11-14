@@ -43,6 +43,13 @@ public class DevScript implements ClientModInitializer {
     private String pendingShot;
     private static String pendingFullShot;
 
+    // Frame time measurement started by "bench <label> <seconds>"
+    private static String benchLabel;
+    private static long benchEndNanos;
+    private static long benchLastNanos;
+    private static long[] benchFrames = new long[0];
+    private static int benchCount;
+
     @Override
     public void onInitializeClient() {
         String script = System.getProperty("lumina.dev.script");
@@ -121,6 +128,16 @@ public class DevScript implements ClientModInitializer {
                     case "hitboxes" -> minecraft.debugEntries.toggleStatus(DebugScreenEntries.ENTITY_HITBOXES);
                     case "set" -> setConfig(arg);
                     case "fps" -> LuminaLog.info("[dev] fps %s = %d", arg, minecraft.getFps());
+                    case "bench" -> {
+                        String[] benchArgs = arg.split(" ");
+                        float seconds = benchArgs.length > 1 ? Float.parseFloat(benchArgs[1]) : 8.0f;
+                        benchLabel = benchArgs[0];
+                        benchCount = 0;
+                        benchLastNanos = 0;
+                        benchEndNanos = System.nanoTime() + (long) (seconds * 1.0e9);
+                        benchFrames = new long[Math.max(1024, (int) (seconds * 2000))];
+                        this.waitTicks = (int) Math.ceil(seconds * 20.0f) + 2;
+                    }
                     case "quit" -> minecraft.stop();
                     default -> LuminaLog.warn("[dev] unknown script line: %s", line);
                 }
@@ -148,12 +165,43 @@ public class DevScript implements ClientModInitializer {
 
     /** End of a whole frame, HUD included. Called from the dev mixin. */
     public static void onFrameDone() {
+        if (benchLabel != null) {
+            long now = System.nanoTime();
+
+            if (benchLastNanos != 0 && benchCount < benchFrames.length)
+                benchFrames[benchCount++] = now - benchLastNanos;
+            benchLastNanos = now;
+
+            if (now >= benchEndNanos) {
+                reportBench();
+                benchLabel = null;
+            }
+        }
+
         if (pendingFullShot != null) {
             Minecraft minecraft = Minecraft.getInstance();
             Screenshot.grab(minecraft.gameDirectory, pendingFullShot, minecraft.getMainRenderTarget(), 1, message -> {
             });
             pendingFullShot = null;
         }
+    }
+
+    /** Average frame time and frame rate, and the frame time that 1 % of frames are slower than. */
+    private static void reportBench() {
+        if (benchCount == 0) {
+            LuminaLog.info("[dev] bench %s: no frames", benchLabel);
+            return;
+        }
+
+        long[] frames = java.util.Arrays.copyOf(benchFrames, benchCount);
+        java.util.Arrays.sort(frames);
+        double total = 0;
+        for (long frame : frames)
+            total += frame;
+
+        double avgMs = total / benchCount / 1.0e6;
+        double p99Ms = frames[Math.min(benchCount - 1, (int) (benchCount * 0.99))] / 1.0e6;
+        LuminaLog.info("[dev] bench %s: frames=%d avg=%.3f ms (%.1f fps) p99=%.3f ms", benchLabel, benchCount, avgMs, 1000.0 / avgMs, p99Ms);
     }
 
     private static void setConfig(String arg) throws ReflectiveOperationException {

@@ -1,0 +1,35 @@
+# Frame time benchmark in the overworld: same views with everything on, then with the shaders off.
+# Run with devscripts/run.sh bench dev 2560 1440 to match a 1440p screen.
+wait 200
+cmd gamemode spectator @p
+cmd execute in minecraft:overworld run tp @p 0 120 0
+wait 100
+cmd execute in minecraft:overworld run spreadplayers 0 0 0 1 false @p
+cmd weather clear
+cmd time set 3000
+wait 500
+cmd execute as @p at @s run tp @s ~ ~10 ~ 0 15
+wait 200
+bench A_horizon 10
+cmd execute as @p at @s run tp @s ~ ~ ~ 90 40
+wait 60
+bench B_down 10
+cmd execute as @p at @s run tp @s ~ ~ ~ -95 -15
+wait 60
+bench C_towards_sun 10
+shot bench_sun
+cmd execute as @p at @s run tp @s ~ ~ ~ 0 15
+cmd weather rain
+wait 200
+bench D_rain 10
+cmd weather clear
+cmd time set 13800
+wait 100
+bench E_dusk 10
+cmd time set 3000
+wait 60
+shot bench_view
+set enabled false
+wait 200
+bench Z_off_horizon 10
+quit
