@@ -5,14 +5,17 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "BlockRendererMixin",
+    "DefaultMainPassMixin",
     "EntityMixin",
     "FluidRendererMixin",
+    "FramebufferAccessor",
     "GameRendererMixin",
     "GraphicsPipelineMixin",
     "LevelRendererMixin",
     "OptionsMixin",
     "RenderRegionMixin",
     "SkyRendererMixin",
+    "SwapChainInvoker",
     "WorldRendererMixin"
   ],
   "injectors": {
