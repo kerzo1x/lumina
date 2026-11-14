@@ -27,7 +27,7 @@ public class LuminaSettingsScreen extends Screen {
     private static final int[] SHADOW_RESOLUTIONS = {1024, 2048, 4096};
 
     private enum Tab {
-        GENERAL, SHADOWS, COLOR, WATER, SKY, PERFORMANCE
+        GENERAL, SHADOWS, COLOR, ATMOSPHERE, WATER, SKY, PERFORMANCE
     }
 
     /** Kept between openings, so adjusting one thing does not mean finding its tab again every time. */
@@ -114,6 +114,14 @@ public class LuminaSettingsScreen extends Screen {
                 slider("vignette", 0, 1, 0.05, true, () -> config.vignette, value -> config.vignette = (float) value);
                 slider("sharpen", 0, 1, 0.05, true, () -> config.sharpen, value -> config.sharpen = (float) value);
             }
+            case ATMOSPHERE -> {
+                toggle("haze", () -> config.atmosphericHaze, value -> config.atmosphericHaze = value);
+                slider("haze_density", 0, 1, 0.05, true, () -> config.hazeDensity, value -> config.hazeDensity = (float) value);
+                toggle("auto_exposure", () -> config.autoExposure, value -> config.autoExposure = value);
+                slider("auto_exposure_strength", 0, 1, 0.05, true, () -> config.autoExposureStrength, value -> config.autoExposureStrength = (float) value);
+                toggle("cloud_shadows", () -> config.cloudShadows, value -> config.cloudShadows = value);
+                slider("cloud_shadow_strength", 0, 1, 0.05, true, () -> config.cloudShadowStrength, value -> config.cloudShadowStrength = (float) value);
+            }
             case WATER -> {
                 toggle("water", () -> config.water, value -> config.water = value);
                 slider("water_waves", 0, 2, 0.1, true, () -> config.waterWaves, value -> config.waterWaves = (float) value);
@@ -130,6 +138,8 @@ public class LuminaSettingsScreen extends Screen {
             case PERFORMANCE -> {
                 toggle("crowd", () -> config.crowdOptimization, value -> config.crowdOptimization = value);
                 slider("crowd_budget", 10, 120, 5, false, () -> config.crowdBudget, value -> config.crowdBudget = (int) value);
+                toggle("adaptive_quality", () -> config.adaptiveQuality, value -> config.adaptiveQuality = value);
+                slider("adaptive_target_fps", 30, 360, 10, false, () -> config.adaptiveTargetFps, value -> config.adaptiveTargetFps = (int) value);
             }
         }
 
