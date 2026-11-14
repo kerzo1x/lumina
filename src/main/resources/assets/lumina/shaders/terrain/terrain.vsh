@@ -5,6 +5,7 @@ layout (binding = 0) uniform UniformBufferObject {
 };
 
 #include "terrain_common.glsl"
+#include "clouds.glsl"
 
 layout (binding = 2) uniform UBO2 {
     ivec4 SectionOffsets[128];
@@ -31,8 +32,23 @@ layout (location = 6) out float skyLevel;
 layout (location = 7) out vec3 relPos;
 // 0 plain, 1 leaves, 2 plant, 3 water, 4 glossy (ice, stained glass), 8 lava. See BlockFlags.java
 layout (location = 8) out flat float blockKind;
+// Share of the direct light that gets through the clouds. Worked out per vertex: a cloud shadow changes over tens
+// of blocks, so interpolating it across a face is exact to the eye at a fraction of the per-pixel cost
+layout (location = 9) out float cloudShade;
 
 #include "waving.glsl"
+
+float cloudLight(vec3 rel) {
+    if (LuminaCloud.w <= 0.0 || LuminaLightDir.y < 0.05)
+        return 1.0;
+
+    float toLayer = (CLOUD_HEIGHT - (LuminaHaze.z + rel.y)) / LuminaLightDir.y;
+    if (toLayer <= 0.0)
+        return 1.0;
+
+    vec2 p = (rel.xz + LuminaLightDir.xz * toLayer + LuminaCloud.xy) * CLOUD_SCALE;
+    return 1.0 - smoothstep(LuminaCloud.z, LuminaCloud.z + 0.13, cloudShapeCoarse(p)) * LuminaCloud.w;
+}
 
 const float UV_INV = 1.0 / 32768.0;
 const vec3 POSITION_INV = vec3(1.0 / 2048.0);
@@ -53,6 +69,7 @@ void main() {
 
     gl_Position = MVP * vec4(pos, 1.0);
     relPos = pos;
+    cloudShade = cloudLight(pos);
 
     // Kinds that sway keep their weight in the upper two bits, the others use those bits for more kinds
     blockKind = (light & 3u) == 0u ? float(light & 15u) : float(light & 3u);

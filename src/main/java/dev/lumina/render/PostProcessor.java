@@ -74,8 +74,9 @@ public final class PostProcessor {
             this.bloomB = new RenderTarget("bloomB", width / BLOOM_DIVISOR, height / BLOOM_DIVISOR);
             this.raysA = new RenderTarget("raysA", width / GODRAYS_DIVISOR, height / GODRAYS_DIVISOR);
             this.raysB = new RenderTarget("raysB", width / GODRAYS_DIVISOR, height / GODRAYS_DIVISOR);
-            this.occlusionA = new RenderTarget("occlusionA", width / OCCLUSION_DIVISOR, height / OCCLUSION_DIVISOR);
-            this.occlusionB = new RenderTarget("occlusionB", width / OCCLUSION_DIVISOR, height / OCCLUSION_DIVISOR);
+            // Half-float: blue carries the distance from the camera along with the two factors
+            this.occlusionA = new RenderTarget("occlusionA", width / OCCLUSION_DIVISOR, height / OCCLUSION_DIVISOR, VK_FORMAT_R16G16B16A16_SFLOAT, false);
+            this.occlusionB = new RenderTarget("occlusionB", width / OCCLUSION_DIVISOR, height / OCCLUSION_DIVISOR, VK_FORMAT_R16G16B16A16_SFLOAT, false);
             this.luminance = new RenderTarget("luminance", 16, 9, VK_FORMAT_R32_SFLOAT, false);
             this.exposure[0] = new RenderTarget("exposureA", 1, 1, VK_FORMAT_R32_SFLOAT, false);
             this.exposure[1] = new RenderTarget("exposureB", 1, 1, VK_FORMAT_R32_SFLOAT, false);

@@ -3,6 +3,7 @@
 // Screen-space ray tracing against the depth buffer, at half resolution.
 // Red: ambient occlusion (1 = open, 0 = buried in a corner).
 // Green: contact shadow (1 = lit, 0 = something close by stands between this point and the light).
+// Blue: distance from the camera, so the blur and the upscale need not read the full-size depth again.
 
 layout (binding = 0) uniform AoUBO {
     // x: 1 / projection[0][0], y: 1 / projection[1][1], z: projection[0][0], w: projection[1][1]
@@ -60,7 +61,7 @@ void main() {
     float depth = depthAt(pixel);
 
     if (depth >= SKY_DISTANCE || depth > LuminaAoParams.z) {
-        fragColor = vec4(1.0);
+        fragColor = vec4(1.0, 1.0, min(depth, 60000.0), 1.0);
         return;
     }
 
@@ -145,5 +146,5 @@ void main() {
         contact *= 1.0 - smoothstep(36.0, 56.0, depth);
     }
 
-    fragColor = vec4(1.0 - occlusion, 1.0 - contact, 0.0, 1.0);
+    fragColor = vec4(1.0 - occlusion, 1.0 - contact, depth, 1.0);
 }

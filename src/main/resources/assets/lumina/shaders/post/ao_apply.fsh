@@ -37,12 +37,12 @@ void main() {
         vec2 offset = vec2(i & 1, i >> 1);
         vec2 texel = clamp(base + offset, vec2(0.0), lowSize - 1.0);
 
-        // The occlusion pass computed each half-size texel at the full-size pixel with twice its coordinates
-        float texelDepth = texelFetch(Sampler1, min(ivec2(texel) * 2, fullSize - 1), 0).r;
+        // Blue holds the distance the occlusion pass worked with for that texel
+        vec3 low = texelFetch(Sampler0, ivec2(texel), 0).rgb;
         vec2 bilinear = mix(1.0 - f, f, offset);
-        float weight = bilinear.x * bilinear.y / (1.0 + abs(texelDepth - depth) / tolerance) + 1.0e-4;
+        float weight = bilinear.x * bilinear.y / (1.0 + abs(low.b - depth) / tolerance) + 1.0e-4;
 
-        sum += texelFetch(Sampler0, ivec2(texel), 0).rg * weight;
+        sum += low.rg * weight;
         weights += weight;
     }
 

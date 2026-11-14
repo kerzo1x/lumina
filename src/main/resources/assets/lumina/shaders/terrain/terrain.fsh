@@ -1,7 +1,6 @@
 #version 460
 
 #include "terrain_common.glsl"
-#include "clouds.glsl"
 
 layout (binding = 4) uniform sampler2D Sampler0;
 layout (binding = 6) uniform sampler2DShadow ShadowMap;
@@ -22,6 +21,7 @@ layout (location = 5) in vec3 lightColor;
 layout (location = 6) in float skyLevel;
 layout (location = 7) in vec3 relPos;
 layout (location = 8) in flat float blockKind;
+layout (location = 9) in float cloudShade;
 
 layout (location = 0) out vec4 fragColor;
 
@@ -171,19 +171,6 @@ float sampleShadow(vec3 pos, vec3 normal, float ndl) {
     return shadow;
 }
 
-// Share of the direct light that gets through the clouds of the sky to this point
-float cloudLight(vec3 rel) {
-    if (LuminaCloud.w <= 0.0 || LuminaLightDir.y < 0.05)
-        return 1.0;
-
-    float toLayer = (CLOUD_HEIGHT - (LuminaHaze.z + rel.y)) / LuminaLightDir.y;
-    if (toLayer <= 0.0)
-        return 1.0;
-
-    vec2 p = (rel.xz + LuminaLightDir.xz * toLayer + LuminaCloud.xy) * CLOUD_SCALE;
-    return 1.0 - smoothstep(LuminaCloud.z, LuminaCloud.z + 0.13, cloudShapeCoarse(p)) * LuminaCloud.w;
-}
-
 // Distance haze that gathers in low ground, glowing where it is lit from behind. skyAccess keeps it out of caves.
 // The same as luminaHaze in assets/minecraft/shaders/include/lumina_effects.glsl.
 vec3 applyHaze(vec3 color, float skyAccess) {
@@ -245,14 +232,17 @@ float interleavedNoise(vec2 p) {
 // Screen-space reflection: walks along the mirrored ray until it disappears behind something already drawn.
 // Returns the colour found there in rgb and how much to trust it in a.
 vec4 traceReflection(vec3 origin, vec3 dir) {
-    float stepLength = 0.5;
+    // Far from the camera a step shorter than a pixel finds nothing new: the first step grows with the distance
+    // and the count shrinks, so the ray still reaches as far with up to a third fewer depth reads
+    float far = smoothstep(24.0, 96.0, length(origin));
+    float stepLength = 0.5 * (1.0 + far * 2.0);
     float travelled = stepLength * (0.5 + interleavedNoise(gl_FragCoord.xy));
     vec2 uv = vec2(0.0);
     float depth = 0.0;
 
     // The step count comes from the adaptive quality. 20 steps already reach past 300 blocks, further than any
     // render distance; the old 24 went on to 900 blocks for nothing
-    int steps = int(LuminaShadowParams.z);
+    int steps = int(LuminaShadowParams.z * (1.0 - far * 0.35));
 
     for (int i = 0; i < steps; ++i) {
         vec4 clip = MVP * vec4(origin + dir * travelled, 1.0);
@@ -433,8 +423,8 @@ void main() {
                 lit *= mix(sampleShadow(relPos, normal, ndl), 1.0, distFade);
         }
 
-        if (lit > 0.0)
-            lit *= cloudLight(relPos);
+        // Cloud shadow, from the vertex shader
+        lit *= cloudShade;
 
         vec3 dayLight = mix(LuminaShadowColor.rgb, LuminaLitColor.rgb, lit);
         waterLit = lit;

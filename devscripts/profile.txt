@@ -1,0 +1,67 @@
+# Cost of each effect: frame time with everything on, then with one effect off at a time.
+wait 200
+cmd gamemode spectator @p
+cmd execute in minecraft:overworld run tp @p 0 120 0
+wait 100
+cmd execute in minecraft:overworld run spreadplayers 0 0 0 1 false @p
+cmd weather clear
+cmd time set 3000
+set adaptiveQuality false
+wait 500
+cmd execute as @p at @s run tp @s ~ ~10 ~ 90 40
+wait 200
+bench all_on 6
+set shadows false
+wait 40
+bench no_shadows 6
+set shadows true
+set ambientOcclusion false
+set contactShadows false
+wait 40
+bench no_ao_contact 6
+set ambientOcclusion true
+set contactShadows true
+set water false
+wait 40
+bench no_water 6
+set water true
+set reflections false
+wait 40
+bench no_reflections 6
+set reflections true
+set bloom false
+set godrays 0
+wait 40
+bench no_bloom_rays 6
+set bloom true
+set godrays 0.3
+set clouds false
+wait 40
+bench no_clouds 6
+set clouds true
+set customSky false
+wait 40
+bench no_sky 6
+set customSky true
+set cloudShadows false
+wait 40
+bench no_cloud_shadows 6
+set cloudShadows true
+set atmosphericHaze false
+wait 40
+bench no_haze 6
+set atmosphericHaze true
+set autoExposure false
+wait 40
+bench no_exposure 6
+set autoExposure true
+set entityShading false
+set entityShadows false
+wait 40
+bench no_entity 6
+set entityShading true
+set entityShadows true
+set enabled false
+wait 200
+bench off 6
+quit
