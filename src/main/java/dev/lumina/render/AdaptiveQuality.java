@@ -8,8 +8,10 @@ import net.minecraft.client.Minecraft;
  * Holds the frame rate by trading away the parts of the effects that cost the most and show the least.
  *
  * The time between frames is smoothed over about half a second. While it stays above the target, the level goes up
- * one step at a time (level 0 is full quality); once it has been comfortably below for a few seconds, it comes back
- * down. The target never exceeds the frame rate limit or, with vsync, the refresh rate: frames that wait on those
+ * one step at a time (level 0 is full quality); once it has been below the target for a few seconds, it comes back
+ * down. Single slow frames (server lag, chunk loading) are capped before they enter the average, so they cannot
+ * push the level up on their own. If going back up makes frames slow again right away, the next attempt waits
+ * twice as long, up to a minute, instead of switching back and forth. The target never exceeds the frame rate limit or, with vsync, the refresh rate: frames that wait on those
  * are not slow.
  */
 public final class AdaptiveQuality {
@@ -17,6 +19,9 @@ public final class AdaptiveQuality {
 
     private static final long DOWNGRADE_COOLDOWN_NANOS = 750_000_000L;
     private static final long UPGRADE_DELAY_NANOS = 3_000_000_000L;
+    private static final long MAX_UPGRADE_DELAY_NANOS = 60_000_000_000L;
+    /** A downgrade this soon after an upgrade means the upgrade did not fit. */
+    private static final long FAILED_UPGRADE_NANOS = 10_000_000_000L;
     /** Frames longer than this are pauses (loading, a dragged window), not a measure of the rendering cost. */
     private static final double MAX_SAMPLE_MS = 100.0;
 
@@ -33,6 +38,8 @@ public final class AdaptiveQuality {
     private double smoothedMs = -1.0;
     private long lastChangeNanos;
     private long fastSinceNanos;
+    private long upgradeDelayNanos = UPGRADE_DELAY_NANOS;
+    private long lastUpgradeNanos;
 
     public void update(LuminaConfig config) {
         long now = System.nanoTime();
@@ -41,6 +48,7 @@ public final class AdaptiveQuality {
 
         if (!config.adaptiveQuality) {
             setLevel(0, "adaptive quality off");
+            this.upgradeDelayNanos = UPGRADE_DELAY_NANOS;
             this.smoothedMs = -1.0;
             return;
         }
@@ -52,22 +60,29 @@ public final class AdaptiveQuality {
         if (frameMs > MAX_SAMPLE_MS)
             return;
 
-        this.smoothedMs = this.smoothedMs < 0.0 ? frameMs : this.smoothedMs + (frameMs - this.smoothedMs) * 0.03;
-
         double targetMs = 1000.0 / effectiveTargetFps(config);
+        frameMs = Math.min(frameMs, targetMs * 2.0);
+
+        this.smoothedMs = this.smoothedMs < 0.0 ? frameMs : this.smoothedMs + (frameMs - this.smoothedMs) * 0.03;
 
         if (this.smoothedMs > targetMs * 1.08) {
             this.fastSinceNanos = 0;
 
-            if (this.level < MAX_LEVEL && now - this.lastChangeNanos > DOWNGRADE_COOLDOWN_NANOS)
+            if (this.level < MAX_LEVEL && now - this.lastChangeNanos > DOWNGRADE_COOLDOWN_NANOS) {
+                if (this.lastUpgradeNanos != 0 && now - this.lastUpgradeNanos < FAILED_UPGRADE_NANOS)
+                    this.upgradeDelayNanos = Math.min(this.upgradeDelayNanos * 2, MAX_UPGRADE_DELAY_NANOS);
+
+                this.lastUpgradeNanos = 0;
                 setLevel(this.level + 1, "%.2f ms per frame, target %.2f ms".formatted(this.smoothedMs, targetMs));
-        } else if (this.smoothedMs < targetMs * 0.82) {
+            }
+        } else if (this.smoothedMs < targetMs * 0.97) {
             if (this.fastSinceNanos == 0)
                 this.fastSinceNanos = now;
 
-            if (this.level > 0 && now - this.fastSinceNanos > UPGRADE_DELAY_NANOS && now - this.lastChangeNanos > UPGRADE_DELAY_NANOS) {
+            if (this.level > 0 && now - this.fastSinceNanos > this.upgradeDelayNanos && now - this.lastChangeNanos > this.upgradeDelayNanos) {
                 setLevel(this.level - 1, "%.2f ms per frame, target %.2f ms".formatted(this.smoothedMs, targetMs));
                 this.fastSinceNanos = now;
+                this.lastUpgradeNanos = now;
             }
         } else {
             this.fastSinceNanos = 0;
