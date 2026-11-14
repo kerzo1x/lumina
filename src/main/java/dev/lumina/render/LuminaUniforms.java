@@ -55,6 +55,16 @@ public final class LuminaUniforms {
     public static final MappedBuffer AO_APPLY = new MappedBuffer(4 * 4);
     public static final MappedBuffer SKY = new MappedBuffer(4 * 4);
 
+    // Effects added in 0.2
+    /** x: haze density (0 = off), y: how fast it thins with height, z: camera height in the world, w: glow towards the light. */
+    public static final MappedBuffer HAZE = new MappedBuffer(4 * 4);
+    /** xy: cloud layer coordinates above the camera, z: density threshold of the cloud cover, w: shadow strength (0 = off). */
+    public static final MappedBuffer CLOUD = new MappedBuffer(4 * 4);
+    /** x: number of steps of the light shaft march. */
+    public static final MappedBuffer RAY_PARAMS = new MappedBuffer(4 * 4);
+    /** x: strength, y: rate towards a brighter picture, z: rate towards a darker one, w: 1 to jump straight to the target. */
+    public static final MappedBuffer EXPOSURE = new MappedBuffer(4 * 4);
+
     private static boolean registered = false;
 
     private LuminaUniforms() {
@@ -104,6 +114,10 @@ public final class LuminaUniforms {
         Uniforms.vec4f_uniformMap.put("LuminaAoParams", () -> AO_PARAMS);
         Uniforms.vec4f_uniformMap.put("LuminaAoApply", () -> AO_APPLY);
         Uniforms.vec4f_uniformMap.put("LuminaSky", () -> SKY);
+        Uniforms.vec4f_uniformMap.put("LuminaHaze", () -> HAZE);
+        Uniforms.vec4f_uniformMap.put("LuminaCloud", () -> CLOUD);
+        Uniforms.vec4f_uniformMap.put("LuminaRayParams", () -> RAY_PARAMS);
+        Uniforms.vec4f_uniformMap.put("LuminaExposure", () -> EXPOSURE);
 
         registered = true;
     }

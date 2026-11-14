@@ -7,9 +7,10 @@
 layout (binding = 0) uniform AoUBO {
     // x: 1 / projection[0][0], y: 1 / projection[1][1], z: projection[0][0], w: projection[1][1]
     vec4 LuminaProj;
-    // xyz: direction to the light in view space, w: 1 when contact shadows are wanted
+    // xyz: direction to the light in view space, w: steps of the contact shadow ray (0 = off)
     vec4 LuminaLightView;
-    // x: occlusion radius in blocks (0 = occlusion off), y: contact shadow ray length, z: furthest distance treated
+    // x: occlusion radius in blocks (0 = occlusion off), y: contact shadow ray length, z: furthest distance treated,
+    // w: number of occlusion samples (up to 8)
     vec4 LuminaAoParams;
 };
 
@@ -99,7 +100,11 @@ void main() {
         tangent = tangent * cos(angle) + cross(normal, tangent) * sin(angle);
         vec3 bitangent = cross(normal, tangent);
 
-        for (int i = 0; i < 8; ++i) {
+        // The adaptive quality may ask for fewer samples: the kernel is ordered from the centre out, so the
+        // closest crevices, where occlusion is darkest, are kept
+        int samples = int(LuminaAoParams.w);
+
+        for (int i = 0; i < samples; ++i) {
             vec3 probe = position + (tangent * KERNEL[i].x + bitangent * KERNEL[i].y + normal * KERNEL[i].z) * radius;
             float sceneDepth = depthAt(screenPosition(probe));
 
@@ -108,19 +113,21 @@ void main() {
             occlusion += step(sceneDepth, -probe.z - 0.04 - depthStep) * nearby;
         }
 
-        occlusion /= 8.0;
+        occlusion /= float(samples);
     }
 
     float contact = 0.0;
     vec3 lightDir = LuminaLightView.xyz;
 
-    if (LuminaLightView.w > 0.5 && depth < 56.0 && dot(normal, lightDir) > 0.05) {
+    int contactSteps = int(LuminaLightView.w);
+
+    if (contactSteps > 0 && depth < 56.0 && dot(normal, lightDir) > 0.05) {
         // Short march towards the light: catches small things the shadow map is too coarse for
         float rayLength = LuminaAoParams.y * (1.0 + depth * 0.03);
         vec3 origin = position + normal * (0.02 + depth * 0.002);
 
-        for (int i = 0; i < 8; ++i) {
-            float travelled = rayLength * (float(i) + 0.4 + pattern) / 8.0;
+        for (int i = 0; i < contactSteps; ++i) {
+            float travelled = rayLength * (float(i) + 0.4 + pattern) / float(contactSteps);
             vec3 probe = origin + lightDir * travelled;
             vec2 probeUv = screenPosition(probe);
 

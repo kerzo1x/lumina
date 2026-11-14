@@ -1,7 +1,13 @@
 #version 460
 
 // Replaces the game's sky: atmosphere, sun, moon with phases, stars, clouds, and the End's nebula.
-// Drawn as one screen-covering triangle where the game would draw its sky, before any terrain.
+// Drawn where the game would draw its sky, before any terrain, in two passes compiled from this file:
+//
+// SKY_LOW_RES: everything smooth (atmosphere, glow around the sun, clouds, the galaxy and the End's gas clouds)
+// into a target of half the screen size. That is where nearly all the cost is, the clouds alone take some forty
+// noise lookups a pixel. rgb is the colour, a how much of the sharp details below shows through (0 behind a cloud).
+//
+// Otherwise: the full-size pass that scales that up and adds what has to stay sharp: sun disc, moon, stars.
 
 layout (binding = 0) uniform SkyUBO {
     // Rotation from view space to world axes
@@ -28,11 +34,15 @@ layout (binding = 0) uniform SkyUBO {
     vec4 FogColor;
 };
 
+#ifndef SKY_LOW_RES
+layout (binding = 1) uniform sampler2D Sampler0;
+#endif
+
 layout (location = 0) in vec2 texCoord;
 
 layout (location = 0) out vec4 fragColor;
 
-const float CLOUD_HEIGHT = 192.0;
+#include "clouds.glsl"
 
 float hash21(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -134,7 +144,8 @@ vec3 moon(vec3 dir, vec3 moonDir, float phase) {
     return glow + surface * smoothstep(1.0, 0.9, r2);
 }
 
-vec3 overworld(vec3 dir) {
+// The smooth part of the overworld sky. a: how much of the sharp details shows (0 behind a cloud).
+vec4 overworldSmooth(vec3 dir) {
     float time = LuminaSkyOrigin.w;
     vec3 sunDir = LuminaSunDir.xyz;
     vec3 moonDir = LuminaMoonDir.xyz;
@@ -160,22 +171,20 @@ vec3 overworld(vec3 dir) {
     float starLight = LuminaSkyParams.x * clear;
     if (starLight > 0.01 && dir.y > -0.06) {
         vec3 fixedDir = mat3(LuminaCelestial) * dir;
-        float stars = starField(fixedDir, 90.0, 0.012, time) + starField(fixedDir, 42.0, 0.006, time) * 1.6;
         float galaxy = exp(-fixedDir.z * fixedDir.z * 14.0) * fbm2(fixedDir.xy * 5.0 + 3.0);
 
         // The game's night sky is close to black: a little blue keeps it a sky rather than a void
         sky += vec3(0.010, 0.018, 0.045) * (0.5 + 0.5 * dir.y) * starLight * 2.0;
-        sky += (vec3(0.9, 0.95, 1.0) * stars * 2.2 + vec3(0.25, 0.3, 0.5) * galaxy * 0.5) * starLight * aboveHorizon;
+        sky += vec3(0.25, 0.3, 0.5) * galaxy * 0.5 * starLight * aboveHorizon;
     }
 
-    // Sun: a small bright disc with a wide soft halo
+    // Wide soft halo around the sun, the disc itself is sharp and drawn at full size
     float sunFacing = dot(dir, sunDir);
     vec3 sunColor = mix(vec3(1.0, 0.5, 0.2), vec3(1.0, 0.96, 0.86), smoothstep(0.0, 0.35, sunDir.y));
-    float sunDisc = smoothstep(0.99925, 0.99955, sunFacing);
     float sunHalo = pow(max(sunFacing, 0.0), 400.0) * 0.55 + pow(max(sunFacing, 0.0), 28.0) * 0.14;
-    sky += sunColor * (sunDisc * 4.0 + sunHalo) * clear * aboveHorizon;
+    sky += sunColor * sunHalo * clear * aboveHorizon;
 
-    sky += moon(dir, moonDir, LuminaMoonDir.w) * clear * aboveHorizon;
+    float detail = 1.0;
 
     // Clouds: a flat layer of noise at cloud height, lit from the side the light is on
     float coverage = LuminaSkyParams.y;
@@ -183,10 +192,8 @@ vec3 overworld(vec3 dir) {
     float distanceToClouds = heightToClouds / (abs(dir.y) < 1.0e-4 ? 1.0e-4 : dir.y);
 
     if (coverage > 0.0 && distanceToClouds > 0.0 && distanceToClouds < 9000.0) {
-        vec2 p = (LuminaSkyOrigin.xz + dir.xz * distanceToClouds) * 0.0024;
-
-        // fbm2 tops out a little below 1, hence the division
-        float shape = (fbm2(p) * 0.72 + fbm2(p * 2.9 + 31.0) * 0.28) / 0.97;
+        vec2 p = (LuminaSkyOrigin.xz + dir.xz * distanceToClouds) * CLOUD_SCALE;
+        float shape = cloudShape(p);
         float threshold = mix(0.68, 0.30, clamp(coverage + rain * 0.45, 0.0, 1.0));
         float density = smoothstep(threshold, threshold + 0.13, shape);
 
@@ -207,11 +214,41 @@ vec3 overworld(vec3 dir) {
             cloud *= mix(1.0, 0.5, rain) * mix(1.0, 0.6, thunder);
 
             float fade = exp(-distanceToClouds * 0.00028) * smoothstep(0.0, 0.1, abs(dir.y));
-            sky = mix(sky, cloud, density * fade * 0.96);
+            float cover = density * fade * 0.96;
+            sky = mix(sky, cloud, cover);
+            detail = 1.0 - cover;
         }
     }
 
-    return sky;
+    return vec4(sky, detail);
+}
+
+// The sharp part of the overworld sky, added on top of the smooth part where no cloud covers it
+vec3 overworldSharp(vec3 dir) {
+    float time = LuminaSkyOrigin.w;
+    vec3 sunDir = LuminaSunDir.xyz;
+    float clear = LuminaSunDir.w;
+    float aboveHorizon = smoothstep(-0.06, 0.0, dir.y);
+
+    vec3 sharp = vec3(0.0);
+
+    float starLight = LuminaSkyParams.x * clear;
+    if (starLight > 0.01 && dir.y > -0.06) {
+        vec3 fixedDir = mat3(LuminaCelestial) * dir;
+        float stars = starField(fixedDir, 90.0, 0.012, time) + starField(fixedDir, 42.0, 0.006, time) * 1.6;
+        // The clear weather factor is applied once, below, together with the sun and moon
+        sharp += vec3(0.9, 0.95, 1.0) * stars * 2.2 * LuminaSkyParams.x;
+    }
+
+    float sunFacing = dot(dir, sunDir);
+    if (sunFacing > 0.999) {
+        vec3 sunColor = mix(vec3(1.0, 0.5, 0.2), vec3(1.0, 0.96, 0.86), smoothstep(0.0, 0.35, sunDir.y));
+        sharp += sunColor * smoothstep(0.99925, 0.99955, sunFacing) * 4.0;
+    }
+
+    sharp += moon(dir, LuminaMoonDir.xyz, LuminaMoonDir.w);
+
+    return sharp * clear * aboveHorizon;
 }
 
 // A star of the given layer, tinted by its temperature: most are white, some blue, some orange
@@ -229,16 +266,12 @@ vec3 colouredStars(vec3 dir, float scale, float density, float time) {
 
 // The End: open space. Black, crowded with stars, crossed by the band of a galaxy with dust lanes,
 // and a few faint clouds of glowing gas in the End's own purple.
-vec3 endSky(vec3 dir) {
+// The smooth part. a: how much of the fine star grain of the galaxy shows here.
+vec4 endSmooth(vec3 dir) {
     float time = LuminaSkyOrigin.w;
-    float brightness = LuminaSkyParams.x;
+    float grain = 0.0;
 
     vec3 sky = vec3(0.004, 0.004, 0.009);
-
-    // Three depths of stars: a dust of faint ones, the ordinary ones, and a handful of bright ones
-    vec3 stars = colouredStars(dir, 150.0, 0.10, time) * 0.9
-               + colouredStars(dir, 85.0, 0.04, time) * 2.0
-               + colouredStars(dir, 34.0, 0.008, time) * 3.5;
 
     // The galaxy lies along a tilted great circle
     vec3 pole = normalize(vec3(0.35, 0.62, -0.70));
@@ -257,8 +290,8 @@ vec3 endSky(vec3 dir) {
         float core = pow(max(dot(dir, normalize(cross(pole, vec3(0.0, 1.0, 0.0)))), 0.0), 3.0);
         sky += mix(vec3(0.20, 0.24, 0.36), vec3(0.50, 0.40, 0.28), core) * glow * 0.85;
 
-        // Too many stars to tell apart, as a fine grain
-        stars += vec3(0.9, 0.9, 1.0) * starField(dir, 260.0, 0.22, time) * band * (1.0 - lanes) * 0.9;
+        // Where the galaxy shows its grain of stars too many to tell apart
+        grain = band * (1.0 - lanes);
     }
 
     // Glowing gas, only in a few places
@@ -271,14 +304,35 @@ vec3 endSky(vec3 dir) {
         sky += vec3(0.08, 0.30, 0.38) * smoothstep(0.50, 0.80, filaments) * patches * 0.26;
     }
 
-    return sky + stars * brightness;
+    return vec4(sky, grain);
+}
+
+// The stars of the End, grain is the alpha of endSmooth
+vec3 endSharp(vec3 dir, float grain) {
+    float time = LuminaSkyOrigin.w;
+
+    // Three depths of stars: a dust of faint ones, the ordinary ones, and a handful of bright ones
+    vec3 stars = colouredStars(dir, 150.0, 0.10, time) * 0.9
+               + colouredStars(dir, 85.0, 0.04, time) * 2.0
+               + colouredStars(dir, 34.0, 0.008, time) * 3.5;
+
+    if (grain > 0.004)
+        stars += vec3(0.9, 0.9, 1.0) * starField(dir, 260.0, 0.22, time) * grain * 0.9;
+
+    return stars * LuminaSkyParams.x;
 }
 
 void main() {
     vec2 ndc = vec2(texCoord.x * 2.0 - 1.0, 1.0 - texCoord.y * 2.0);
     vec3 dir = normalize(mat3(LuminaViewToWorld) * vec3(ndc * LuminaProj.xy, -1.0));
+    bool end = LuminaSkyColor.a > 1.5;
 
-    vec3 color = LuminaSkyColor.a > 1.5 ? endSky(dir) : overworld(dir);
+#ifdef SKY_LOW_RES
+    fragColor = end ? endSmooth(dir) : overworldSmooth(dir);
+#else
+    vec4 smoothPart = textureLod(Sampler0, texCoord, 0.0);
+    vec3 sharp = end ? endSharp(dir, smoothPart.a) : overworldSharp(dir) * smoothPart.a;
 
-    fragColor = vec4(color, 1.0);
+    fragColor = vec4(smoothPart.rgb + sharp, 1.0);
+#endif
 }

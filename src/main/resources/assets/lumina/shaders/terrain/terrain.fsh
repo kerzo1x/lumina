@@ -1,6 +1,7 @@
 #version 460
 
 #include "terrain_common.glsl"
+#include "clouds.glsl"
 
 layout (binding = 4) uniform sampler2D Sampler0;
 layout (binding = 6) uniform sampler2DShadow ShadowMap;
@@ -109,11 +110,17 @@ float vanillaShade(vec3 n) {
 float pcf(sampler2DShadow map, vec3 uv, float kernel) {
     vec2 step = kernel / vec2(textureSize(map, 0));
 
-    float sum = texture(map, uv) * 2.0;
-    sum += texture(map, uv + vec3(-step.x, -step.y, 0.0));
-    sum += texture(map, uv + vec3( step.x, -step.y, 0.0));
-    sum += texture(map, uv + vec3(-step.x,  step.y, 0.0));
-    sum += texture(map, uv + vec3( step.x,  step.y, 0.0));
+    // The four outer corners first. Where they agree, the spot is fully lit or fully shadowed and the five taps
+    // between them would agree too: most of the screen stops here at less than half the cost
+    float corners = texture(map, uv + vec3(-step.x, -step.y, 0.0));
+    corners += texture(map, uv + vec3( step.x, -step.y, 0.0));
+    corners += texture(map, uv + vec3(-step.x,  step.y, 0.0));
+    corners += texture(map, uv + vec3( step.x,  step.y, 0.0));
+
+    if (corners < 0.001 || corners > 3.999)
+        return corners * 0.25;
+
+    float sum = corners + texture(map, uv) * 2.0;
     sum += texture(map, uv + vec3(-1.5 * step.x, 0.0, 0.0));
     sum += texture(map, uv + vec3( 1.5 * step.x, 0.0, 0.0));
     sum += texture(map, uv + vec3(0.0, -1.5 * step.y, 0.0));
@@ -164,6 +171,40 @@ float sampleShadow(vec3 pos, vec3 normal, float ndl) {
     return shadow;
 }
 
+// Share of the direct light that gets through the clouds of the sky to this point
+float cloudLight(vec3 rel) {
+    if (LuminaCloud.w <= 0.0 || LuminaLightDir.y < 0.05)
+        return 1.0;
+
+    float toLayer = (CLOUD_HEIGHT - (LuminaHaze.z + rel.y)) / LuminaLightDir.y;
+    if (toLayer <= 0.0)
+        return 1.0;
+
+    vec2 p = (rel.xz + LuminaLightDir.xz * toLayer + LuminaCloud.xy) * CLOUD_SCALE;
+    return 1.0 - smoothstep(LuminaCloud.z, LuminaCloud.z + 0.13, cloudShapeCoarse(p)) * LuminaCloud.w;
+}
+
+// Distance haze that gathers in low ground, glowing where it is lit from behind. skyAccess keeps it out of caves.
+// The same as luminaHaze in assets/minecraft/shaders/include/lumina_effects.glsl.
+vec3 applyHaze(vec3 color, float skyAccess) {
+    if (LuminaHaze.x <= 0.0 || skyAccess <= 0.0)
+        return color;
+
+    float dist = length(relPos);
+    float k = LuminaHaze.y;
+    float height = max(LuminaHaze.z - 62.0, -8.0);
+    float dy = relPos.y * k;
+
+    // Density exp(-k * height above sea level), integrated along the ray from the camera
+    float along = abs(dy) > 1.0e-3 ? (1.0 - exp(-dy)) / dy : 1.0 - 0.5 * dy;
+    float amount = (1.0 - exp(-LuminaHaze.x * exp(-k * height) * dist * along)) * skyAccess;
+
+    vec3 dir = relPos / max(dist, 1.0e-3);
+    float glow = pow(max(dot(dir, LuminaLightDir.xyz), 0.0), 8.0) * LuminaHaze.w;
+
+    return mix(color, FogColor.rgb + LuminaLitColor.rgb * glow * 0.35, amount);
+}
+
 float hash21(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
     p += dot(p, p + 45.32);
@@ -209,7 +250,11 @@ vec4 traceReflection(vec3 origin, vec3 dir) {
     vec2 uv = vec2(0.0);
     float depth = 0.0;
 
-    for (int i = 0; i < 24; ++i) {
+    // The step count comes from the adaptive quality. 20 steps already reach past 300 blocks, further than any
+    // render distance; the old 24 went on to 900 blocks for nothing
+    int steps = int(LuminaShadowParams.z);
+
+    for (int i = 0; i < steps; ++i) {
         vec4 clip = MVP * vec4(origin + dir * travelled, 1.0);
 
         if (clip.w <= 0.0)
@@ -297,9 +342,15 @@ vec4 shadeWater(vec3 surface, vec3 light, float skyAccess, float sunLit) {
     // Under a roof or in a cave there is no sky to fall back on
     vec3 sky = mix(FogColor.rgb, LuminaSky.rgb, sqrt(clamp(reflected.y, 0.0, 1.0))) * (0.4 + 0.6 * light);
     vec3 fallback = mix(body, sky, skyAccess);
+    vec3 reflection = fallback;
 
-    vec4 hit = traceReflection(relPos, normalize(reflected));
-    vec3 reflection = mix(fallback, hit.rgb, hit.a);
+    // Seen from above, water reflects 3-6 percent of the light: what the ray would find there cannot be told apart
+    // from the sky colour, so the trace is skipped and faded in as the view flattens
+    float traced = smoothstep(0.045, 0.07, fresnel);
+    if (traced > 0.0) {
+        vec4 hit = traceReflection(relPos, normalize(reflected));
+        reflection = mix(fallback, hit.rgb, hit.a * traced);
+    }
 
     vec3 result = mix(body, reflection, fresnel);
 
@@ -311,12 +362,18 @@ vec4 shadeWater(vec3 surface, vec3 light, float skyAccess, float sunLit) {
 
 // What a mirror-like surface with the given normal shows: whatever the reflected ray finds on screen,
 // the sky where it finds nothing and the sky can be seen from here, the surface itself otherwise.
-vec3 mirror(vec3 surface, vec3 normal, float skyAccess) {
+// amount is how much of the result will show: below a few percent the trace is not worth it
+vec3 mirror(vec3 surface, vec3 normal, float skyAccess, float amount) {
     vec3 reflected = reflect(normalize(relPos), normal);
     vec3 sky = mix(FogColor.rgb, LuminaSky.rgb, sqrt(clamp(reflected.y, 0.0, 1.0)));
-    vec4 hit = traceReflection(relPos, reflected);
+    vec3 fallback = mix(surface, sky, skyAccess);
 
-    return mix(mix(surface, sky, skyAccess), hit.rgb, hit.a);
+    float traced = smoothstep(0.03, 0.06, amount);
+    if (traced <= 0.0)
+        return fallback;
+
+    vec4 hit = traceReflection(relPos, reflected);
+    return mix(fallback, hit.rgb, hit.a * traced);
 }
 
 float fresnel(vec3 normal, float base) {
@@ -369,10 +426,15 @@ void main() {
         float lit = diffuse;
 
         if (LuminaLightDir.w > 0.5 && diffuse > 0.0) {
-            float shadow = sampleShadow(relPos, normal, ndl);
+            // Past the shadow distance the maps would only be sampled to be faded out
             float distFade = smoothstep(LuminaParams.z * 0.8, LuminaParams.z, length(relPos));
-            lit *= mix(shadow, 1.0, distFade);
+
+            if (distFade < 1.0)
+                lit *= mix(sampleShadow(relPos, normal, ndl), 1.0, distFade);
         }
+
+        if (lit > 0.0)
+            lit *= cloudLight(relPos);
 
         vec3 dayLight = mix(LuminaShadowColor.rgb, LuminaLitColor.rgb, lit);
         waterLit = lit;
@@ -404,7 +466,7 @@ void main() {
     else if (isGlossy && LuminaReflect.x > 0.0 && AlphaCutout < 0.05) {
         // Ice and stained glass. Clear glass is cut out rather than blended, there is nothing to draw a reflection on
         float amount = fresnel(normal, 0.05) * LuminaReflect.x;
-        color.rgb = mix(color.rgb, mirror(color.rgb, normal, skyAccess), amount);
+        color.rgb = mix(color.rgb, mirror(color.rgb, normal, skyAccess, amount), amount);
         color.a = max(color.a, amount);
     }
     else if (isPlain && LuminaReflect.y > 0.01 && normal.y > 0.9) {
@@ -416,9 +478,11 @@ void main() {
             float amount = wetness * (0.06 + 0.94 * puddle) * fresnel(normal, 0.12);
 
             color.rgb *= mix(1.0, 0.8, wetness);
-            color.rgb = mix(color.rgb, mirror(color.rgb, normal, skyAccess), amount);
+            color.rgb = mix(color.rgb, mirror(color.rgb, normal, skyAccess, amount), amount);
         }
     }
+
+    color.rgb = applyHaze(color.rgb, skyAccess);
 
     color = mix(FogColor * vec4(1, 1, 1, color.a), color, fadeFactor);
 

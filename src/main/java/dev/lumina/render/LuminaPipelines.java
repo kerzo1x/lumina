@@ -41,6 +41,9 @@ public final class LuminaPipelines {
     public static GraphicsPipeline blur;
     public static GraphicsPipeline finalPass;
     public static GraphicsPipeline sky;
+    public static GraphicsPipeline skyLowRes;
+    public static GraphicsPipeline luminanceDown;
+    public static GraphicsPipeline exposure;
     public static GraphicsPipeline occlusion;
     public static GraphicsPipeline occlusionBlur;
     public static GraphicsPipeline occlusionApply;
@@ -86,6 +89,8 @@ public final class LuminaPipelines {
                                                                .addUniform("vec4", "LuminaSky")
                                                                .addUniform("vec4", "LuminaWave")
                                                                .addUniform("vec4", "LuminaReflect")
+                                                               .addUniform("vec4", "LuminaHaze")
+                                                               .addUniform("vec4", "LuminaCloud")
                                                                .build())
                                        .setPushConstants(modelOffset)
                                        .addImageDescriptor(4, "sampler2D", "Sampler0", 0)
@@ -131,6 +136,7 @@ public final class LuminaPipelines {
                          PipelineConfig.builder()
                                        .addUB(PipelineConfig.UB.builder(0, VK_SHADER_STAGE_FRAGMENT_BIT)
                                                                .addUniform("vec4", "LuminaSunScreen")
+                                                               .addUniform("vec4", "LuminaRayParams")
                                                                .build())
                                        .addImageDescriptor(1, "sampler2D", "Sampler1", 1)
                                        .build());
@@ -156,27 +162,53 @@ public final class LuminaPipelines {
                                          .addImageDescriptor(1, "sampler2D", "Sampler0", 0)
                                          .addImageDescriptor(2, "sampler2D", "Sampler1", 1)
                                          .addImageDescriptor(3, "sampler2D", "Sampler2", 2)
+                                         .addImageDescriptor(4, "sampler2D", "Sampler3", 3)
                                          .build());
+
+        luminanceDown = create("lumina_luminance_down", CustomVertexFormat.NONE, "post/screen.vsh", "post/luminance_down.fsh",
+                               PipelineConfig.builder()
+                                             .addImageDescriptor(0, "sampler2D", "Sampler0", 0)
+                                             .build());
+
+        exposure = create("lumina_exposure", CustomVertexFormat.NONE, "post/screen.vsh", "post/exposure.fsh",
+                          PipelineConfig.builder()
+                                        .addUB(PipelineConfig.UB.builder(0, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                                                .addUniform("vec4", "LuminaExposure")
+                                                                .build())
+                                        .addImageDescriptor(1, "sampler2D", "Sampler0", 0)
+                                        .addImageDescriptor(2, "sampler2D", "Sampler1", 1)
+                                        .build());
 
         createSkyAndOcclusion();
     }
 
+    private static PipelineConfig.UB skyUniforms() {
+        return PipelineConfig.UB.builder(0, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                .addUniform("mat4", "LuminaViewToWorld")
+                                .addUniform("mat4", "LuminaCelestial")
+                                .addUniform("vec4", "LuminaProj")
+                                .addUniform("vec4", "LuminaSunDir")
+                                .addUniform("vec4", "LuminaMoonDir")
+                                .addUniform("vec4", "LuminaSkyColor")
+                                .addUniform("vec4", "LuminaSunsetColor")
+                                .addUniform("vec4", "LuminaSkyParams")
+                                .addUniform("vec4", "LuminaSkyOrigin")
+                                .addUniform("vec4", "LuminaLitColor")
+                                .addUniform("vec4", "FogColor")
+                                .build();
+    }
+
     private static void createSkyAndOcclusion() {
-        sky = create("lumina_sky", CustomVertexFormat.NONE, "post/screen.vsh", "sky/sky.fsh",
+        // Smooth part at half size, then the full-size pass that adds the sharp details, see sky.fsh
+        skyLowRes = create("lumina_sky_low", CustomVertexFormat.NONE, "post/screen.vsh", "sky/sky.fsh", new String[] {"SKY_LOW_RES"},
+                           PipelineConfig.builder()
+                                         .addUB(skyUniforms())
+                                         .build());
+
+        sky = create("lumina_sky", CustomVertexFormat.NONE, "post/screen.vsh", "sky/sky.fsh", new String[0],
                      PipelineConfig.builder()
-                                   .addUB(PipelineConfig.UB.builder(0, VK_SHADER_STAGE_FRAGMENT_BIT)
-                                                           .addUniform("mat4", "LuminaViewToWorld")
-                                                           .addUniform("mat4", "LuminaCelestial")
-                                                           .addUniform("vec4", "LuminaProj")
-                                                           .addUniform("vec4", "LuminaSunDir")
-                                                           .addUniform("vec4", "LuminaMoonDir")
-                                                           .addUniform("vec4", "LuminaSkyColor")
-                                                           .addUniform("vec4", "LuminaSunsetColor")
-                                                           .addUniform("vec4", "LuminaSkyParams")
-                                                           .addUniform("vec4", "LuminaSkyOrigin")
-                                                           .addUniform("vec4", "LuminaLitColor")
-                                                           .addUniform("vec4", "FogColor")
-                                                           .build())
+                                   .addUB(skyUniforms())
+                                   .addImageDescriptor(1, "sampler2D", "Sampler0", 0)
                                    .build());
 
         occlusion = create("lumina_occlusion", CustomVertexFormat.NONE, "post/screen.vsh", "post/ao.fsh",
@@ -206,13 +238,18 @@ public final class LuminaPipelines {
     }
 
     private static GraphicsPipeline create(String name, VertexFormat format, String vertexPath, String fragmentPath, PipelineConfig config) {
+        return create(name, format, vertexPath, fragmentPath, new String[0], config);
+    }
+
+    private static GraphicsPipeline create(String name, VertexFormat format, String vertexPath, String fragmentPath, String[] defines,
+                                           PipelineConfig config) {
         long start = System.nanoTime();
         LuminaLog.debug("Compiling pipeline %s (%s, %s)", name, vertexPath, fragmentPath);
 
         Pipeline.Builder builder = new Pipeline.Builder(format, name);
         builder.applyConfig(config);
         builder.setShaderSrc(SPIRVUtils.ShaderKind.VERTEX_SHADER, ShaderSource.load(vertexPath));
-        builder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, ShaderSource.load(fragmentPath));
+        builder.setShaderSrc(SPIRVUtils.ShaderKind.FRAGMENT_SHADER, ShaderSource.load(fragmentPath, defines));
 
         GraphicsPipeline pipeline;
         try {

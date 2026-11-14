@@ -32,12 +32,19 @@ import org.joml.Vector3f;
  */
 public final class LuminaRenderer {
     private static final long HEALTH_INTERVAL_NANOS = 30_000_000_000L;
+    /** Haze density per block at sea level for hazeDensity 1. 0.35 (the default) gives a quarter haze at 150 blocks. */
+    private static final float HAZE_DENSITY_SCALE = 0.0055f;
+    /** The haze halves every 20 blocks of height. */
+    private static final float HAZE_FALLOFF = 0.035f;
 
     private static final LightState light = new LightState();
     private static final ShadowRenderer shadows = new ShadowRenderer();
     private static final PostProcessor post = new PostProcessor();
     private static final SkyPass sky = new SkyPass();
     private static final SkyPass.FrameInfo frame = new SkyPass.FrameInfo();
+    private static final AdaptiveQuality quality = new AdaptiveQuality();
+    /** Below this size the window is minimised or being rebuilt: the frame is left to VulkanMod alone. */
+    private static final int MIN_TARGET_SIZE = 64;
 
     private static boolean pipelinesCreated;
     /** Read by chunk meshing threads to decide whether to bake vanilla face shading. */
@@ -61,6 +68,7 @@ public final class LuminaRenderer {
     private static long framesSinceHealth;
     private static long totalFrames;
     private static int appliedShadowResolution;
+    private static long skippedFrames;
 
     private LuminaRenderer() {
     }
@@ -105,8 +113,20 @@ public final class LuminaRenderer {
                 return;
 
             Framebuffer main = Renderer.getInstance().getMainPass().getMainFramebuffer();
+
+            // A minimised window gives VulkanMod a 10x10 placeholder target, and while the swap chain is rebuilt the
+            // main target can briefly have no depth image. Resizing every target down to nothing and back on each
+            // minimise only churned video memory, and binding the main target without depth is what crashes, so
+            // such frames are skipped. The targets keep their size until the window has a real one again.
+            if (main == null || main.getWidth() < MIN_TARGET_SIZE || main.getHeight() < MIN_TARGET_SIZE || main.getDepthAttachment() == null) {
+                skippedFrames++;
+                return;
+            }
+
             post.ensureResources(main.getWidth(), main.getHeight());
+            sky.ensureResources(main.getWidth(), main.getHeight());
             shadows.ensureResources(config.shadowResolution);
+            quality.update(config);
 
             if (appliedShadowResolution != config.shadowResolution) {
                 LuminaLog.info("Shadow map resolution set to %d", config.shadowResolution);
@@ -171,7 +191,10 @@ public final class LuminaRenderer {
             LuminaUniforms.set(LuminaUniforms.INV_VIEW, scratchMatrix.set(modelView).invert());
             LuminaUniforms.set(LuminaUniforms.ENTITY_PARAMS, config.entityShading ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f);
 
-            ownClouds = config.customSky && config.clouds && level.dimensionType().skybox() == DimensionType.Skybox.OVERWORLD;
+            boolean overworld = level.dimensionType().skybox() == DimensionType.Skybox.OVERWORLD;
+            ownClouds = config.customSky && config.clouds && overworld;
+
+            updateEffectUniforms(level, config, overworld, camX, camY, camZ);
             levelPrepared = true;
         } catch (Throwable t) {
             fail("level preparation", t);
@@ -204,6 +227,20 @@ public final class LuminaRenderer {
         light.lightDirView.set(rightX * l.x + rightY * l.y + rightZ * l.z,
                                upX * l.x + upY * l.y + upZ * l.z,
                                backX * l.x + backY * l.y + backZ * l.z);
+    }
+
+    /** Haze and cloud shadows, see terrain.fsh and lumina_effects.glsl. */
+    private static void updateEffectUniforms(ClientLevel level, LuminaConfig config, boolean overworld, double camX, double camY, double camZ) {
+        // Under water or in lava the game's own fog takes over
+        boolean inFluid = !level.getFluidState(BlockPos.containing(camX, camY, camZ)).isEmpty();
+        float haze = config.atmosphericHaze && overworld && !inFluid ? config.hazeDensity * HAZE_DENSITY_SCALE * (1.0f + 1.5f * light.rain) : 0.0f;
+        LuminaUniforms.set(LuminaUniforms.HAZE, haze, HAZE_FALLOFF, (float) camY, light.strength);
+
+        // The cloud cover of the sky, worked out the same way as in sky.fsh
+        float coverage = Math.max(config.cloudCoverage, 0.02f);
+        float threshold = 0.68f + (0.30f - 0.68f) * Math.min(Math.max(coverage + light.rain * 0.45f, 0.0f), 1.0f);
+        float strength = config.cloudShadows && ownClouds ? config.cloudShadowStrength * 0.9f : 0.0f;
+        LuminaUniforms.set(LuminaUniforms.CLOUD, SkyPass.cloudOriginX(frame), SkyPass.cloudOriginZ(frame), threshold, strength);
     }
 
     /** How wet the ground is: follows the rain, but only where it actually rains rather than snows or stays dry. */
@@ -270,7 +307,7 @@ public final class LuminaRenderer {
                 LuminaUniforms.set(LuminaUniforms.WAVE, wind, 1.0f, 0.0f, 0.0f);
 
                 boolean castShadows = config.shadows && light.strength > 0.01f;
-                shadows.render(light, config, camera.getPartialTickTime(), camX, camY, camZ, castShadows);
+                shadows.render(light, config, quality, camera.getPartialTickTime(), camX, camY, camZ, castShadows);
 
                 // The shadow pass switches the sway off for the far cascade
                 LuminaUniforms.set(LuminaUniforms.WAVE, wind, 1.0f, 0.0f, 0.0f);
@@ -280,14 +317,14 @@ public final class LuminaRenderer {
 
                 LuminaUniforms.set(LuminaUniforms.SHADOW_MAT, shadows.nearMatrix(scratchMatrix, camX, camY, camZ));
                 LuminaUniforms.set(LuminaUniforms.SHADOW_MAT_FAR, shadows.farMatrix(scratchMatrix, camX, camY, camZ));
-                LuminaUniforms.set(LuminaUniforms.SHADOW_PARAMS, shadows.nearTexel(), shadows.farTexel(), 0.0f, 0.0f);
+                LuminaUniforms.set(LuminaUniforms.SHADOW_PARAMS, shadows.nearTexel(), shadows.farTexel(), quality.reflectionSteps(), 0.0f);
                 LuminaUniforms.set(LuminaUniforms.LIGHT_DIR, light.lightDir.x, light.lightDir.y, light.lightDir.z, cascades);
 
                 shadowsRendered = true;
             }
 
             if (renderType == TerrainRenderType.TRANSLUCENT)
-                post.captureOpaque(light, config);
+                post.captureOpaque(light, config, quality);
 
             VTextureSelector.bindTexture(LuminaPipelines.SCENE_COLOR_SLOT, post.sceneColor());
             VTextureSelector.bindTexture(LuminaPipelines.SCENE_DEPTH_SLOT, post.sceneDepth());
@@ -342,7 +379,7 @@ public final class LuminaRenderer {
             LuminaUniforms.set(LuminaUniforms.ENTITY_PARAMS, 2.0f, 0.0f, 0.0f, 0.0f);
 
         try {
-            post.renderGodrays(light, Lumina.config(), frameModelView, frameProjection);
+            post.renderGodrays(light, Lumina.config(), quality, frameModelView, frameProjection);
         } catch (Throwable t) {
             fail("godrays pass", t);
         }
@@ -470,7 +507,8 @@ public final class LuminaRenderer {
 
     public static String describeState() {
         StringBuilder sb = new StringBuilder();
-        sb.append("active=").append(active).append(" failed=").append(failed).append(" frames=").append(totalFrames);
+        sb.append("active=").append(active).append(" failed=").append(failed).append(" frames=").append(totalFrames)
+          .append(" skipped=").append(skippedFrames).append(" quality: ").append(quality.describe());
 
         try {
             Runtime runtime = Runtime.getRuntime();

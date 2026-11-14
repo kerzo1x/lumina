@@ -46,10 +46,18 @@ import static org.lwjgl.vulkan.VK10.*;
 /**
  * Renders terrain depth from the light's point of view into two cascades.
  *
- * The near cascade covers a small area around the camera at high detail and is redrawn every frame.
+ * The near cascade covers a small area around the camera at high detail. It is redrawn at a fixed rate (90 times
+ * a second at full quality, see {@link AdaptiveQuality}) rather than every frame, and at once when the light turns or
+ * the camera moves more than a fraction of a block: a map is drawn around a camera position and the matrices shift
+ * newer positions back to it, so a map a frame old still puts every static shadow in exactly the right place. At
+ * 170 frames a second this halves the cost and the only difference is waving leaves and walking mobs casting
+ * shadows at 90 instead of 170 updates a second.
+ *
  * The far cascade covers the whole shadow distance; it is by far the more expensive one, so it is drawn into
- * a back buffer a quarter of the terrain per frame and swapped in when complete. Both are plain orthographic
- * maps snapped to their texel grid, which is what keeps shadow edges still while the camera moves.
+ * a back buffer a quarter of the terrain per frame and swapped in when complete. It used to be rebuilt without a
+ * pause, about forty times a second; it is now only rebuilt when the light has turned, the camera has moved a tenth
+ * of the cascade, or after a second and a half (to pick up changed and newly loaded chunks). Both are plain
+ * orthographic maps snapped to their texel grid, which is what keeps shadow edges still while the camera moves.
  *
  * VulkanMod only meshes and draws sections reachable by its camera visibility graph. Reusing that list
  * for shadows makes them pop while moving, so this pass builds its own list of every section inside the
@@ -58,6 +66,10 @@ import static org.lwjgl.vulkan.VK10.*;
 public final class ShadowRenderer {
     /** Half size in blocks of the area covered by the near cascade. */
     public static final float NEAR_EXTENT = 28.0f;
+    /** Camera movement, in blocks, after which the near cascade is redrawn without waiting for its turn. */
+    private static final double NEAR_MOVE_LIMIT = 0.35;
+    /** Share of the far cascade's half size the camera may move before the far cascade is rebuilt. */
+    private static final double FAR_MOVE_SHARE = 0.1;
 
     private static final TerrainRenderType[] CASTER_TYPES = {TerrainRenderType.SOLID, TerrainRenderType.CUTOUT};
     private static final int MAX_SCHEDULED_PER_FRAME = 3;
@@ -75,7 +87,10 @@ public final class ShadowRenderer {
     private int farSlice;
     private boolean comparisonSampling = true;
     private boolean farValid;
+    private boolean nearValid;
     private float farExtent;
+    private long nearDrawnNanos;
+    private long farStartedNanos;
 
     private StaticQueue<RenderSection>[] areaQueues;
     private final List<ChunkArea> usedAreas = new ArrayList<>();
@@ -89,6 +104,9 @@ public final class ShadowRenderer {
     public int lastFarSections;
     public int lastScheduled;
     public long totalScheduled;
+    public long nearRedraws;
+    public long farRebuilds;
+    public long renderCalls;
 
     public void ensureResources(int resolution) {
         if (this.near == null) {
@@ -105,9 +123,10 @@ public final class ShadowRenderer {
         this.resolution = resolution;
     }
 
-    /** Forces the far cascade to be rebuilt from scratch, for example after the terrain was reloaded. */
+    /** Forces both cascades to be redrawn from scratch, for example after the terrain was reloaded. */
     public void invalidate() {
         this.farValid = false;
+        this.nearValid = false;
         this.farSlice = 0;
     }
 
@@ -159,8 +178,10 @@ public final class ShadowRenderer {
      *
      * @param drawCasters false only makes sure the maps are in a state that can be sampled
      */
-    public void render(LightState light, LuminaConfig config, float partialTick, double camX, double camY, double camZ, boolean drawCasters) {
+    public void render(LightState light, LuminaConfig config, AdaptiveQuality quality, float partialTick, double camX, double camY, double camZ,
+                       boolean drawCasters) {
         this.lastScheduled = 0;
+        this.renderCalls++;
 
         if (!drawCasters) {
             // The maps stay bound to the terrain shader even when unused, so they must at least be readable
@@ -177,22 +198,47 @@ public final class ShadowRenderer {
             invalidate();
         }
 
-        // Near cascade: everything, every frame
-        this.near.capture(light, NEAR_EXTENT, this.resolution, camX, camY, camZ);
-        collectSections(this.near, config, -1, false);
+        long now = System.nanoTime();
 
-        ClientLevel level = Minecraft.getInstance().level;
-        if (config.entityShadows && level != null)
-            this.entityShadows.collect(level, partialTick, camX, camY, camZ, NEAR_EXTENT + 8.0f);
-        else
-            this.entityShadows.collect(null, 0.0f, 0.0, 0.0, 0.0, 0.0f);
+        // Near cascade: everything around the camera, at a fixed rate
+        boolean nearDue = !this.nearValid
+                          || this.near.lightChanged(light)
+                          || this.near.distanceSquared(camX, camY, camZ) > NEAR_MOVE_LIMIT * NEAR_MOVE_LIMIT
+                          || now - this.nearDrawnNanos >= quality.nearShadowIntervalNanos();
 
-        this.lastNearSections = drawCascade(this.near, light, true, true);
+        if (nearDue) {
+            this.near.capture(light, NEAR_EXTENT, this.resolution, camX, camY, camZ);
+            collectSections(this.near, config, -1, false);
 
-        // Far cascade: one slice of the chunk areas per frame into the back buffer
+            ClientLevel level = Minecraft.getInstance().level;
+            if (config.entityShadows && level != null)
+                this.entityShadows.collect(level, partialTick, camX, camY, camZ, NEAR_EXTENT + 8.0f);
+            else
+                this.entityShadows.collect(null, 0.0f, 0.0, 0.0, 0.0, 0.0f);
+
+            this.lastNearSections = drawCascade(this.near, light, true, true);
+            this.nearDrawnNanos = now;
+            this.nearValid = true;
+            this.nearRedraws++;
+        }
+
+        // Far cascade: rebuilt when it no longer fits, one slice of the chunk areas per frame into the back buffer
         if (this.farSlice == 0) {
+            double moveLimit = this.farExtent * FAR_MOVE_SHARE;
+            boolean farDue = !this.farValid
+                             || this.farFront.lightChanged(light)
+                             || this.farFront.distanceSquared(camX, camY, camZ) > moveLimit * moveLimit
+                             || now - this.farStartedNanos >= quality.farShadowIntervalNanos();
+
+            if (!farDue) {
+                clearIfUnreadable(this.farFront);
+                return;
+            }
+
             this.farBack.capture(light, this.farExtent, this.resolution, camX, camY, camZ);
             this.farBack.sectionCount = 0;
+            this.farStartedNanos = now;
+            this.farRebuilds++;
         }
 
         // The far cascade is assembled over several frames and cannot follow moving foliage
@@ -463,8 +509,9 @@ public final class ShadowRenderer {
     }
 
     public String describe() {
-        return "near=%d far=%d entities=%d farValid=%s scheduledNow=%d scheduledTotal=%d res=%d"
-                .formatted(this.lastNearSections, this.lastFarSections, this.entityShadows.entityCount(), this.farValid, this.lastScheduled, this.totalScheduled, this.resolution);
+        return "near=%d far=%d entities=%d farValid=%s scheduledNow=%d scheduledTotal=%d res=%d nearRedraws=%d/%d farRebuilds=%d"
+                .formatted(this.lastNearSections, this.lastFarSections, this.entityShadows.entityCount(), this.farValid, this.lastScheduled,
+                           this.totalScheduled, this.resolution, this.nearRedraws, this.renderCalls, this.farRebuilds);
     }
 
     /**
@@ -487,8 +534,11 @@ public final class ShadowRenderer {
 
         Cascade(String name, int resolution) {
             this.name = name;
-            // The colour attachment is unused, VulkanMod's pipelines always expect one
-            this.framebuffer = new Framebuffer.Builder("Lumina " + name, resolution, resolution, 1, true).build();
+            // The colour attachment is unused, VulkanMod's pipelines always expect one: the smallest format keeps it
+            // at a quarter of the memory of the default RGBA one (12 MB less per map at 2048, 48 MB at 4096)
+            this.framebuffer = new Framebuffer.Builder("Lumina " + name, resolution, resolution, 1, true)
+                    .setFormat(VK_FORMAT_R8_UNORM)
+                    .build();
             this.clearPass = createPass(VK_ATTACHMENT_LOAD_OP_CLEAR);
             this.loadPass = createPass(VK_ATTACHMENT_LOAD_OP_LOAD);
 
@@ -533,6 +583,16 @@ public final class ShadowRenderer {
             this.lightZ = light.lightDir.z;
             this.rotation.set(light.rotation());
             light.buildShadowMatrix(this.matrix, extent, resolution, camX, camY, camZ);
+        }
+
+        boolean lightChanged(LightState light) {
+            // The light direction is quantised, so an unchanged light compares exactly equal
+            return this.lightX != light.lightDir.x || this.lightY != light.lightDir.y || this.lightZ != light.lightDir.z;
+        }
+
+        double distanceSquared(double camX, double camY, double camZ) {
+            double dx = camX - this.camX, dy = camY - this.camY, dz = camZ - this.camZ;
+            return dx * dx + dy * dy + dz * dz;
         }
 
         /** The map was drawn around an older camera position: shift current camera-relative positions back to it. */

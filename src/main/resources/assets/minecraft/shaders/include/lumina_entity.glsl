@@ -8,4 +8,6 @@ layout(std140) uniform LuminaEntity {
     vec4 LuminaLitColor;
     vec4 LuminaShadowColor;
     vec4 LuminaEntityParams;
+    vec4 LuminaHaze;
+    vec4 LuminaCloud;
 };

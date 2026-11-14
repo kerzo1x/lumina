@@ -76,12 +76,27 @@ public class LuminaConfig {
     public float cloudCoverage = 0.5f;
     /** Brightness of the stars, 1 = default. */
     public float stars = 1.0f;
+    /** The clouds of the mod's sky shade the ground they drift over. */
+    public boolean cloudShadows = true;
+    public float cloudShadowStrength = 0.5f;
+
+    // Atmosphere and exposure
+    /** Haze that thickens with distance and gathers in low ground, glowing towards the sun. */
+    public boolean atmosphericHaze = true;
+    public float hazeDensity = 0.35f;
+    /** The picture brightens slowly in the dark and darkens quickly in bright light, like an eye adapting. */
+    public boolean autoExposure = true;
+    public float autoExposureStrength = 0.5f;
 
     // Performance
     /** Hide distant creatures when a lot of them are around, see CrowdControl. */
     public boolean crowdOptimization = true;
     /** How many of the nearest creatures are still drawn once there are more than that around. */
     public int crowdBudget = 30;
+    /** Lowers the cost of the most expensive effects step by step while frames take longer than the target. */
+    public boolean adaptiveQuality = true;
+    /** Frame rate the adaptive quality tries to hold, normally the monitor's refresh rate. */
+    public int adaptiveTargetFps = 170;
 
     public boolean debugLog = true;
 
@@ -129,6 +144,10 @@ public class LuminaConfig {
         cloudCoverage = clamp(cloudCoverage, 0.0f, 1.0f);
         stars = clamp(stars, 0.0f, 2.0f);
         crowdBudget = clamp(crowdBudget, 10, 120);
+        cloudShadowStrength = clamp(cloudShadowStrength, 0.0f, 1.0f);
+        hazeDensity = clamp(hazeDensity, 0.0f, 1.0f);
+        autoExposureStrength = clamp(autoExposureStrength, 0.0f, 1.0f);
+        adaptiveTargetFps = clamp(adaptiveTargetFps, 30, 360);
     }
 
     /** Puts every setting back to its default, except whether the shaders are on at all. */

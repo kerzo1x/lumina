@@ -21,6 +21,21 @@ public final class ShaderSource {
         return resolveIncludes(read(path), path, 0);
     }
 
+    /** Loads a shader with the given names defined right after its version line, for variants of one source file. */
+    public static String load(String path, String... defines) {
+        String source = load(path);
+
+        if (defines.length == 0)
+            return source;
+
+        StringBuilder block = new StringBuilder();
+        for (String define : defines)
+            block.append("#define ").append(define).append('\n');
+
+        int lineEnd = source.indexOf('\n', source.indexOf("#version"));
+        return source.substring(0, lineEnd + 1) + block + source.substring(lineEnd + 1);
+    }
+
     private static String resolveIncludes(String source, String origin, int depth) {
         if (depth > 8)
             throw new IllegalStateException("Include depth exceeded in " + origin);

@@ -3,6 +3,7 @@
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:lumina_entity.glsl>
+#moj_import <minecraft:lumina_effects.glsl>
 
 uniform sampler2D Sampler0;
 uniform sampler2D LuminaShadowNear;
@@ -79,6 +80,8 @@ vec3 luminaLight() {
         return vec3(1.0);
 
     float lit = LuminaLightDir.w > 0.5 ? luminaShadow(luminaRelPos) : 1.0;
+    if (lit > 0.0)
+        lit *= luminaCloudLight(luminaRelPos);
 
     return mix(vec3(1.0), mix(LuminaShadowColor.rgb, LuminaLitColor.rgb, lit), strength);
 }
@@ -102,5 +105,8 @@ void main() {
     color *= lightMapColor;
     color.rgb *= luminaLight();
 #endif
+    // Lumina: distance haze, only for things in the world (not the hand, not the inventory)
+    if (LuminaEntityParams.x > 0.5 && LuminaEntityParams.x < 1.5)
+        color.rgb = luminaHaze(color.rgb, luminaRelPos, smoothstep(0.2, 0.7, luminaSkyLight));
     fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 }

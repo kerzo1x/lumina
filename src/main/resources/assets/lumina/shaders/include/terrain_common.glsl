@@ -32,4 +32,8 @@ layout (binding = 3) uniform LuminaUBO {
     vec4 LuminaWave;
     // x: reflections on glossy blocks (0 = off), y: wetness of the ground in rain, z: 1 for animated lava, w: water wave height
     vec4 LuminaReflect;
+    // x: haze density (0 = off), y: how fast it thins with height, z: camera height in the world, w: glow towards the light
+    vec4 LuminaHaze;
+    // xy: cloud layer coordinates above the camera, z: density threshold of the cover, w: cloud shadow strength (0 = off)
+    vec4 LuminaCloud;
 };

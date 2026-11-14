@@ -7,13 +7,15 @@ layout (binding = 0) uniform FinalUBO {
     vec4 LuminaTint;
     // rgb: godray colour, a: godray strength
     vec4 LuminaRayColor;
-    // x: sharpening amount, yz: texel size of the scene
+    // x: sharpening amount, yz: texel size of the scene, w: 1 when the exposure of Sampler3 is applied
     vec4 LuminaPost;
 };
 
 layout (binding = 1) uniform sampler2D Sampler0;
 layout (binding = 2) uniform sampler2D Sampler1;
 layout (binding = 3) uniform sampler2D Sampler2;
+// 1x1: the exposure the eye has adapted to, see exposure.fsh
+layout (binding = 4) uniform sampler2D Sampler3;
 
 layout (location = 0) in vec2 texCoord;
 
@@ -32,6 +34,9 @@ void main() {
         vec3 detail = clamp(color - around * 0.25, -0.12, 0.12);
         color = clamp(color + detail * LuminaPost.x * 1.5, 0.0, 1.0);
     }
+
+    if (LuminaPost.w > 0.5)
+        color = min(color * texelFetch(Sampler3, ivec2(0), 0).r, vec3(1.0));
 
     // Screen blend keeps the glow from clipping highlights
     vec3 bloom = textureLod(Sampler1, texCoord, 0.0).rgb * LuminaTint.a;
